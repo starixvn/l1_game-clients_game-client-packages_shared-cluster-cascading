@@ -1,14 +1,13 @@
 import gc from "@sg/game-client-base";
 import { _decorator, instantiate, Label, Node, NodePool, Prefab, sp, tween, UIOpacity, v3, Vec3 } from "cc";
 import { AudioIds } from "db://assets/game/audios/AudioIds";
-import { CascadingSlotState } from "db://shared-cascading-slot/cascading-slot-state";
+import { CascadingSlotState } from "db://shared-cluster-cascading/cascading-slot-state";
 import { AudioUtils } from "db://shared-components/game/audios/utils";
 import { bundleManager } from "db://shared-components/shared/common-components/bundle-manager/bundle-manager";
 import { ObserverComponent } from "db://shared-components/shared/common-components/observer-component/scripts/observer-component";
 import { AnimationUtils, ComponentUtils } from "db://shared-components/shared/utils";
 import { random } from "lodash-es";
 import Observer from "observer";
-import { CascadingSlotConfig } from "../../../cascading-slot-base-configs";
 import {
     BoardSize,
     convertBoardValue,
@@ -71,7 +70,7 @@ export class CascadingSlotBoard extends ObserverComponent {
         this.node.children.forEach((child) => {
             const slotReel = child.getComponent(CascadingSlotReel);
             if (slotReel) {
-                slotReel.itemDisplayCount = CascadingSlotConfig.reelItemCount;
+                slotReel.itemDisplayCount = BoardSize.ROW;
                 slotReel.createReel();
                 this.reels.push(slotReel);
             }

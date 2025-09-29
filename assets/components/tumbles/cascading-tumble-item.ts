@@ -1,6 +1,6 @@
 import gc from "@sg/game-client-base";
 import { _decorator, Component, Label, Sprite, SpriteAtlas } from "cc";
-import { SpecialSymbol } from "db://shared-cascading-slot/cascading-slot-utils";
+import { SpecialSymbol } from "db://shared-cluster-cascading/cascading-slot-utils";
 import Observer from "observer";
 import { FreeSpinData } from "../bet-history/bet-details/cascading-ticket-detail-item";
 const { ccclass, property } = _decorator;

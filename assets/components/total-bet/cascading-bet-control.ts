@@ -4,7 +4,7 @@ import { StatusButton } from "db://shared-components/shared/common-components/bu
 import { ObserverComponent } from "db://shared-components/shared/common-components/observer-component/scripts/observer-component";
 import Observer from "observer";
 
-import { CascadingUIStore } from "db://shared-cascading-slot/stores/cascading-ui-store";
+import { CascadingUIStore } from "db://shared-cluster-cascading/stores/cascading-ui-store";
 import { BetControlHandlers } from "../../handlers/bet-control-handlers";
 import { BetControlStore } from "../../stores/bet-control-store";
 
@@ -77,7 +77,7 @@ export class CascadingBetControl extends ObserverComponent {
     }
 
     @handle(BetControlHandlers, (handle, status: boolean) => handle.updateStatusBetAmountPopup())
-    onCloseBetControl() {}
+    onCloseBetControl() { }
 
     @handle(BetControlHandlers, (handle) => handle.changeBetLevel(false))
     protected onClickDecreaseBetLevel() {

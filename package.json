@@ -1,7 +1,7 @@
 {
-    "name": "shared-cascading-slot",
+    "name": "shared-cluster-cascading",
     "version": "1.0.0",
-    "description": "i18n:shared-cascading-slot.description",
+    "description": "i18n:shared-cluster-cascading.description",
     "contributions": {
         "asset-db": {
             "mount": {

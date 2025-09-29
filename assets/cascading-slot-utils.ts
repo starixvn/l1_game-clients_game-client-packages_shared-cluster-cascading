@@ -3,8 +3,8 @@ import { CascadingSlotConfig } from "./cascading-slot-base-configs";
 import { Tumble } from "./game-messages-cascading";
 
 export enum SpecialSymbol {
-    SCATTER_SYMBOL = 9,
-    MULTIPLIER_SYMBOL = 10,
+    SCATTER_SYMBOL = 8,
+    MULTIPLIER_SYMBOL = 10, //remove later
 }
 
 export const SlotNotification = {
@@ -25,7 +25,7 @@ export const SpinButtonState = {
 
 export enum BoardSize {
     COLUMN = 6,
-    ROW = 5,
+    ROW = 6,
 }
 
 export const convertBoardValue = (data: number[]): number[][] => {

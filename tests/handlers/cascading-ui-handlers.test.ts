@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, jest } from "@jest/globals";
-import { BuyFreespinsStore } from "db://shared-cascading-slot/buy-freespins/handler/buy-freespins-store";
+import { BuyFreespinsStore } from "db://shared-cluster-cascading/buy-freespins/handler/buy-freespins-store";
 import inversify from "inversify";
 import { stub } from "jest-auto-stub";
 import mobx from "mobx";

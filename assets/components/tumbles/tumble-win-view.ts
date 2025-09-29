@@ -1,6 +1,6 @@
 import gc from "@sg/game-client-base";
 import { _decorator, Label, Layout, Node, tween, UIOpacity, UITransform, v3 } from "cc";
-import { CascadingUIStore } from "db://shared-cascading-slot/stores/cascading-ui-store";
+import { CascadingUIStore } from "db://shared-cluster-cascading/stores/cascading-ui-store";
 import { FadeAppearanceNode } from "db://shared-components/shared/common-components/fade-appearance-node";
 import { AnimationUtils } from "db://shared-components/shared/utils";
 import Observer from "observer";

@@ -22,7 +22,6 @@ import { TumbleWinWiew } from "./components/tumbles/tumble-win-view";
 import { AutoPlayHandler } from "./handlers/auto-play-handlers";
 import { CascadingSlotErrorHandler } from "./handlers/cascading-slot-error-handler";
 import { CascadingUIHandler } from "./handlers/cascading-ui-handler";
-import { CascadingSlotSettlementStore } from "./stores/cascading-slot-settlement-store";
 import { CascadingUIStore } from "./stores/cascading-ui-store";
 
 const { ccclass, property } = _decorator;
@@ -30,7 +29,7 @@ const { observer, render, handle } = Observer;
 const { Rounds, Connection, HideGame, Settlements, FormatUtils, RoundHistories } = gc;
 
 @ccclass
-export class CascadingSlotGame extends GameComponentBase {
+export class ClusterCascadingGame extends GameComponentBase {
     @property(CascadingSlotBoard)
     board: CascadingSlotBoard = null;
 
@@ -178,7 +177,7 @@ export class CascadingSlotGame extends GameComponentBase {
         resourcesCache.slotSymbols = cache;
     }
 
-    @render(CascadingSlotSettlementStore, (store) => store.finishData, { fireImmediately: false })
+    // @render(CascadingSlotSettlementStore, (store) => store.finishData, { fireImmediately: false })
     async handleSettlement(finishData: any) {
         if (!finishData) {
             return;

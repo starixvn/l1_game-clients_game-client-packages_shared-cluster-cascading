@@ -1,8 +1,8 @@
 import gc from "@sg/game-client-base";
 import { _decorator, Component, instantiate, Label, Node, Prefab, sys, UITransform } from "cc";
-import { convertData } from "db://shared-cascading-slot/cascading-slot-utils";
-import { CascadingSlotBoard } from "db://shared-cascading-slot/components/slot-board/components/cascading-slot-board";
-import { CascadingTumbleItem } from "db://shared-cascading-slot/components/tumbles/cascading-tumble-item";
+import { convertData } from "db://shared-cluster-cascading/cascading-slot-utils";
+import { CascadingSlotBoard } from "db://shared-cluster-cascading/components/slot-board/components/cascading-slot-board";
+import { CascadingTumbleItem } from "db://shared-cluster-cascading/components/tumbles/cascading-tumble-item";
 import Observer from "observer";
 
 const { ccclass, property } = _decorator;

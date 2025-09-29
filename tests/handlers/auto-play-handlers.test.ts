@@ -1,4 +1,4 @@
-import { BuyFreespinsStore } from "db://shared-cascading-slot/buy-freespins/handler/buy-freespins-store";
+import { BuyFreespinsStore } from "db://shared-cluster-cascading/buy-freespins/handler/buy-freespins-store";
 import { FSBPromotionUIHandler } from "db://shared-common-slot/fsb-promotion/scripts/handlers/fsb-promotion-ui-handler";
 import { FSBPromotionUIStore } from "db://shared-common-slot/fsb-promotion/scripts/stores/fsb-promotion-ui-store";
 import { stub } from "jest-auto-stub";
