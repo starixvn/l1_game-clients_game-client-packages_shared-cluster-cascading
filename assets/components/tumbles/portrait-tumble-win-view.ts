@@ -13,13 +13,13 @@ export class PortraitTumbleWinWiew extends TumbleWinWiew {
     @property(Label)
     totalWinLabel: Label = null;
 
-    @property({ type: Layout, visible: false })
+    @property({ type: Layout, visible: false, override: true })
     tumbleLayout: Layout = null;
 
-    @property({ type: Label, visible: false })
+    @property({ type: Label, visible: false, override: true })
     tumbleLabel: Label = null;
 
-    @property({ type: Label, visible: false })
+    @property({ type: Label, visible: false, override: true })
     totalWin: Label = null;
 
     setTumbleWinValuewin(totalTumbleWin: number) {
@@ -58,8 +58,8 @@ export class PortraitTumbleWinWiew extends TumbleWinWiew {
         });
     }
 
-    resetPositionTumbleLabel() {}
-    showTotalWin(show: boolean) {}
+    resetPositionTumbleLabel() { }
+    showTotalWin(show: boolean) { }
     shiftRightTumbleWin(value: number) {
         return new Promise<void>((resolve) => {
             resolve();

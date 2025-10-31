@@ -1,23 +1,40 @@
 export namespace GameServiceMessageCascading {
     export class CascadingSlotFinish {
         roundId: number;
-        result: string;
-
-        multiplier: number;
-        totalMultiplier: number;
-
-        actualBetwin: number;
         win: number;
-        bigWin: boolean;
+        actualBetWin: number;
+
         totalFreeSpins: number;
         freeSpins: number;
-        isFreeSpin: boolean;
 
-        tumbles: Tumble[];
-        m: number[];
+        bigWin: boolean;
+        isFreeSpin: boolean;
         reachMaxWin: boolean;
+        tumbles: NewTumble[];
         static eventName = "finish";
     }
+
+    export interface NewTumble {
+        newSymbols: number[][];
+        reelMultipliers: number[][];
+        reels: number[][];
+        symbols: WinCluster[];
+        win: number;
+        rageMeter: number;
+    }
+
+    export interface WinCluster {
+        symbol: number;
+        position: {
+            x: number;
+            y: number;
+        }[];
+        count: number;
+        multiplier: number;
+        odds: number;
+        win: number;
+    }
+
 
     interface FreeSpinOddsDetail {
         count: number;
@@ -111,6 +128,7 @@ export namespace GameServiceMessageCascading {
         newBoard: string;
         originalBoard: string;
     }
+
     export interface SettlementResultDetail {
         tumbles: TumbleDetail[];
         freeSpins: {

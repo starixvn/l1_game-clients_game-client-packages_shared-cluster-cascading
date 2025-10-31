@@ -2,8 +2,7 @@ import { _decorator, Component, instantiate, Node, Prefab, tween, v3 } from "cc"
 import { AudioIds } from "db://assets/game/audios/AudioIds";
 import { AudioUtils } from "db://shared-components/game/audios/utils";
 import { AnimationUtils, ComponentUtils } from "db://shared-components/shared/utils";
-import { CascadingSlotConfig } from "../../cascading-slot-base-configs";
-import { globalEmitter, resourcesCache, SlotClientEvent } from "../../cascading-slot-utils";
+import { BoardSize, globalEmitter, resourcesCache, SlotClientEvent } from "../../cascading-slot-utils";
 import { CascadingSlotReelItem } from "./cascading-slot-reel-item";
 const { ccclass, property } = _decorator;
 
@@ -21,7 +20,6 @@ export class CascadingSlotReel extends Component {
     @property
     itemSize = 145;
 
-    itemDisplayCount = CascadingSlotConfig.reelItemCount;
     protected items: CascadingSlotReelItem[] = [];
     public peekEffect = false;
 
@@ -39,7 +37,7 @@ export class CascadingSlotReel extends Component {
     private readonly FALL_IN_PEEK_EFFECT_SPEED = 2500;
 
     createReel() {
-        for (let i = 0; i < this.itemDisplayCount; i++) {
+        for (let i = 0; i < BoardSize.ROW; i++) {
             const item = this.addItem();
             item.node.position = v3(item.node.position.x, this.getItemPosY(i), 0);
         }
@@ -59,7 +57,7 @@ export class CascadingSlotReel extends Component {
     }
 
     get reelHeight() {
-        return this.itemSize * this.itemDisplayCount + this.spacing * (this.itemDisplayCount - 1);
+        return this.itemSize * BoardSize.ROW + this.spacing * (BoardSize.ROW - 1);
     }
 
     addItem() {
@@ -94,22 +92,17 @@ export class CascadingSlotReel extends Component {
             const item = this.addItem();
             item.setItem(value);
             items.push(item);
-            item.node.position = v3(item.node.position.x, this.getItemPosY(this.itemDisplayCount + i), 0);
+            item.node.position = v3(item.node.position.x, this.getItemPosY(BoardSize.ROW + i), 0);
             i++;
         });
 
         return items;
     }
 
-    setItemData(data: number[], multiplier: number[]) {
+    setItemData(data: number[]) {
         this.items.forEach((item, index) => {
             item.setItem(data[index]);
         });
-
-        for (let i = this.items.length - 1; i >= 0; i--) {
-            const item = this.items[i];
-            item.updateMultiplierItem(multiplier);
-        }
     }
 
     async highlightItem(index: number) {
@@ -147,7 +140,7 @@ export class CascadingSlotReel extends Component {
     }
 
     async fallOut(isTurbo: boolean) {
-        await this.fallWithOffset(-this.itemDisplayCount, isTurbo, null);
+        await this.fallWithOffset(-BoardSize.ROW, isTurbo, null);
     }
 
     async fallIn(isTurbo: boolean, onEnded: () => void) {
@@ -262,12 +255,12 @@ export class CascadingSlotReel extends Component {
 
     setStartPositionForItems() {
         this.items.forEach((item, index) => {
-            item.node.position = v3(item.node.position.x, this.getItemPosY(this.itemDisplayCount + index), 0);
+            item.node.position = v3(item.node.position.x, this.getItemPosY(BoardSize.ROW + index), 0);
         });
     }
 
-    async spin(data: number[], multiplier: number[], isTurbo: boolean, onSpinEnded: () => void) {
-        this.setItemData(data, multiplier);
+    async spin(data: number[], isTurbo: boolean, onSpinEnded: () => void) {
+        this.setItemData(data);
         this.setStartPositionForItems();
         await this.fallIn(isTurbo, onSpinEnded);
     }

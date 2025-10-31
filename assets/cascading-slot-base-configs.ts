@@ -20,7 +20,6 @@ export const CascadingSlotConfig: CascadingSlotBaseConfig = {
     },
 
     itemTypeCount: 11,
-    reelItemCount: 5,
     symbolCount: 14,
 };
 
@@ -29,7 +28,6 @@ export interface CascadingSlotBaseConfig {
     turbo: CascadingSlotConfigDuration;
 
     itemTypeCount: number;
-    reelItemCount: number;
     symbolCount: number;
 }
 

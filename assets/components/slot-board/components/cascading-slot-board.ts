@@ -8,7 +8,6 @@ import { ObserverComponent } from "db://shared-components/shared/common-componen
 import { AnimationUtils, ComponentUtils } from "db://shared-components/shared/utils";
 import { random } from "lodash-es";
 import Observer from "observer";
-import { CascadingSlotConfig } from "../../../cascading-slot-base-configs";
 import {
     BoardSize,
     convertBoardValue,
@@ -71,7 +70,6 @@ export class CascadingSlotBoard extends ObserverComponent {
         this.node.children.forEach((child) => {
             const slotReel = child.getComponent(CascadingSlotReel);
             if (slotReel) {
-                slotReel.itemDisplayCount = CascadingSlotConfig.reelItemCount;
                 slotReel.createReel();
                 this.reels.push(slotReel);
             }
@@ -98,11 +96,11 @@ export class CascadingSlotBoard extends ObserverComponent {
 
     generateRandomBoardData() {
         const samples = [
-            [9, 1, 4, 2, 4, 8, 2, 0, 2, 2, 9, 5, 4, 10, 7, 0, 2, 7, 6, 6, 5, 8, 0, 3, 1, 5, 7, 3, 7, 7],
-            [3, 4, 7, 7, 5, 2, 4, 5, 5, 3, 1, 10, 0, 9, 3, 7, 8, 3, 5, 7, 6, 6, 8, 7, 3, 0, 5, 0, 2, 7],
-            [7, 5, 10, 2, 1, 7, 8, 9, 8, 8, 6, 8, 6, 4, 8, 5, 1, 0, 3, 6, 7, 9, 9, 0, 2, 0, 4, 6, 3, 1],
-            [0, 1, 7, 3, 2, 1, 9, 5, 2, 8, 2, 7, 3, 7, 5, 10, 0, 0, 6, 4, 5, 4, 1, 8, 6, 4, 5, 3, 6, 9],
-            [3, 6, 4, 0, 5, 2, 2, 2, 3, 7, 8, 4, 4, 3, 4, 9, 7, 4, 1, 10, 0, 1, 4, 2, 5, 9, 2, 1, 9, 0],
+            [9, 1, 4, 2, 4, 8, 2, 0, 2, 2, 9, 5, 4, 10, 7, 0, 2, 7, 6, 6, 5, 8, 0, 3, 1, 5, 7, 3, 7, 7, 6, 0, 2, 4, 5, 3],
+            [3, 4, 7, 7, 5, 2, 4, 5, 5, 3, 1, 10, 0, 9, 3, 7, 8, 3, 5, 7, 6, 6, 8, 7, 3, 0, 5, 0, 2, 7, 9, 8, 3, 5, 0, 2],
+            [7, 5, 10, 2, 1, 7, 8, 9, 8, 8, 6, 8, 6, 4, 8, 5, 1, 0, 3, 6, 7, 9, 9, 0, 2, 0, 4, 6, 3, 1, 7, 6, 8, 9, 0, 2],
+            [0, 1, 7, 3, 2, 1, 9, 5, 2, 8, 2, 7, 3, 7, 5, 10, 0, 0, 6, 4, 5, 4, 1, 8, 6, 4, 5, 3, 6, 9, 2, 5, 9, 2, 1, 9],
+            [3, 6, 4, 0, 5, 2, 2, 2, 3, 7, 8, 4, 4, 3, 4, 9, 7, 4, 1, 10, 0, 1, 4, 2, 5, 9, 2, 1, 9, 0, 1, 4, 2, 5, 9, 2],
         ];
         const multipliers =
             resourcesCache.gameFeatures?.newMultiplierRange ? [[3], [8], [12], [20], [100]] : [[3], [8], [12], [15], [18]];
@@ -116,17 +114,17 @@ export class CascadingSlotBoard extends ObserverComponent {
         const multipliers = data.multipliers;
         const symbols = data.symbols;
         this.reels.forEach((reel, index) => {
-            const start = index * reel.itemDisplayCount;
-            const end = start + reel.itemDisplayCount;
+            const start = index * BoardSize.ROW;
+            const end = start + BoardSize.ROW;
             const itemData = symbols.slice(start, end);
-            reel.setItemData(itemData, multipliers);
+            reel.setItemData(itemData);
         });
         this.previewPopup.addPreviewPopup(this.reels);
     }
 
-    public setData(symbols: number[][], multiplier: number[]) {
+    public setData(symbols: number[][]) {
         for (let i = 0; i < this.reels.length; i++) {
-            this.reels[i].setItemData(symbols[i], multiplier);
+            this.reels[i].setItemData(symbols[i]);
         }
     }
 
@@ -209,7 +207,7 @@ export class CascadingSlotBoard extends ObserverComponent {
 
     public async spinResult(symbolsBoard: SymbolBoard, isTurbo: boolean) {
         const delayEachReelFallOut = this.reels[0].DELAY_EACH_ITEM_FALL_OUT_DELAY;
-        const { symbols, multipliers } = symbolsBoard;
+        const { symbols } = symbolsBoard;
 
         this.playSpinAudio(isTurbo);
 
@@ -223,9 +221,9 @@ export class CascadingSlotBoard extends ObserverComponent {
             const reelSymbols = symbols[i];
             const awaitReelIndex = peekEffect?.peekIndex || this.reels.length - 1;
             if (i < awaitReelIndex) {
-                this.reels[i].spin(reelSymbols, multipliers, isTurbo, this.playSoundOnBottomItem(i));
+                this.reels[i].spin(reelSymbols, isTurbo, this.playSoundOnBottomItem(i));
             } else if (i === awaitReelIndex) {
-                await this.reels[i].spin(reelSymbols, multipliers, isTurbo, this.playSoundOnBottomItem(i));
+                await this.reels[i].spin(reelSymbols, isTurbo, this.playSoundOnBottomItem(i));
             } else {
                 this.showScattersOnPreviousReels(i);
                 const begin = i === awaitReelIndex + 1;
@@ -233,7 +231,7 @@ export class CascadingSlotBoard extends ObserverComponent {
                 this.showPeekEffect(false, i);
                 await AnimationUtils.delayTime(this.PEEK_EFFECT_DURATION);
                 this.reels[i].peekEffectHighlightAllItems();
-                await this.reels[i].spin(reelSymbols, multipliers, isTurbo, this.playSoundOnBottomItem(i));
+                await this.reels[i].spin(reelSymbols, isTurbo, this.playSoundOnBottomItem(i));
             }
         }
         AudioUtils.stopStoppableSFX(AudioIds.PEEK_EFFECT_REEL);

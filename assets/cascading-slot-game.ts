@@ -19,10 +19,11 @@ import { bundleManager } from "db://shared-components/shared/common-components/b
 import { GameVisibility } from "db://shared-components/shared/common-components/game-visibility/game-visibility";
 import { GameVisibilityStore } from "db://shared-components/shared/common-components/game-visibility/game-visibility-store";
 import { CascadingSlotConfig } from "./cascading-slot-base-configs";
-import { ColorJson, convertData, DialogName, GameFeatureJson, getCustomDuration, resourcesCache } from "./cascading-slot-utils";
+import { ColorJson, DialogName, GameFeatureJson, getCustomDuration, resourcesCache } from "./cascading-slot-utils";
 import { CascadingSlotBoard } from "./components/slot-board/components/cascading-slot-board";
 import { TotalMultiplierView } from "./components/total-multiplier/cascading-total-multiplier-view";
 import { TumbleWinWiew } from "./components/tumbles/tumble-win-view";
+import { GameServiceMessageCascading } from "./game-messages-cascading";
 import { AutoPlayHandler } from "./handlers/auto-play-handlers";
 import { CascadingSlotErrorHandler } from "./handlers/cascading-slot-error-handler";
 import { CascadingUIHandler } from "./handlers/cascading-ui-handler";
@@ -183,7 +184,7 @@ export class CascadingSlotGame extends GameComponentBase {
     }
 
     @render(CascadingSlotSettlementStore, (store) => store.finishData, { fireImmediately: false })
-    async handleSettlement(finishData: any) {
+    async handleSettlement(finishData: GameServiceMessageCascading.CascadingSlotFinish) {
         if (!finishData) {
             return;
         }
@@ -191,39 +192,33 @@ export class CascadingSlotGame extends GameComponentBase {
         const {
             win,
             bigWin,
-            megaWin,
-            superWin,
             totalFreeSpins,
             isFreeSpin,
-            multiplier,
-            totalMultiplier,
             reachMaxWin,
             tumbles,
-            result,
-            actualBetwin,
+            actualBetWin,
             freeSpins,
         } = finishData;
-        const symbolsBoard = { symbols: convertData(result), multipliers: tumbles[0]?.multipliers, isTurbo: false, tumbles };
+        const result = tumbles[0]?.reels;
+        const symbolsBoard = { symbols: result, isTurbo: false, tumbles };
         await this.board.spinResult(symbolsBoard, this.isTurboMode);
-        await this.board.handleTumbles(tumbles, this.isTurboMode);
+        // await this.board.handleTumbles(tumbles, this.isTurboMode);
         const winTumbles = tumbles.length > 1;
-        const winMultiplier = multiplier > 0 && winTumbles;
-        winMultiplier && this.handleTriggerWinMultiplier();
-        await this.board.handleMultiplier(isFreeSpin, winMultiplier, this.tumbleWinView, this.totalMultiplierView);
+        // const winMultiplier = multiplier > 0 && winTumbles;
+        // winMultiplier && this.handleTriggerWinMultiplier();
+        // await this.board.handleMultiplier(isFreeSpin, winMultiplier, this.tumbleWinView, this.totalMultiplierView);
         if (win > 0) {
             this.getBalance();
             this.handleChangeUserBalance(true);
             if (winTumbles) {
-                await this.tumbleWinView.setTotalWinValue(actualBetwin);
+                await this.tumbleWinView.setTotalWinValue(actualBetWin);
             }
             this.handleTotalWin({ win: win, isActualWin: true });
         }
         this.updateTotalWinPromo({ win, totalFreeSpins });
-        this.showTotalMultiplierView(totalMultiplier, isFreeSpin, winMultiplier);
         reachMaxWin && this.setReachMaxWin(true);
-        this.setTotalMultiplierValue(totalMultiplier);
 
-        const isHaveBigWin = bigWin || megaWin || superWin;
+        const isHaveBigWin = bigWin;
         this.handleHaveBigWin(isHaveBigWin);
         this.updateBigWinAmount(win);
 
