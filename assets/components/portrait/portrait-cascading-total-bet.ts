@@ -6,13 +6,14 @@ const { observer, render, handle } = Observer;
 
 @ccclass
 export class PortraitCascadingTotalBet extends CascadingTotalBet {
+
     onClickDecreaseTotalBet() {
-        this.hideSymbolPreview();
+        this.triggerOpenBetControl();
         this.betControl?.onClickDecreaseTotalBet();
     }
 
     onClickIncreaseTotalBet() {
-        this.hideSymbolPreview();
+        this.triggerOpenBetControl();
         this.betControl?.onClickIncreaseTotalBet();
     }
 }

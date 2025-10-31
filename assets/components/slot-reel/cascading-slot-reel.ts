@@ -2,7 +2,8 @@ import { _decorator, Component, instantiate, Node, Prefab, tween, v3 } from "cc"
 import { AudioIds } from "db://assets/game/audios/AudioIds";
 import { AudioUtils } from "db://shared-components/game/audios/utils";
 import { AnimationUtils, ComponentUtils } from "db://shared-components/shared/utils";
-import { BoardSize, globalEmitter, resourcesCache, SlotClientEvent } from "../../cascading-slot-utils";
+import { CascadingSlotConfig } from "../../cascading-slot-base-configs";
+import { globalEmitter, resourcesCache, SlotClientEvent } from "../../cascading-slot-utils";
 import { CascadingSlotReelItem } from "./cascading-slot-reel-item";
 const { ccclass, property } = _decorator;
 
@@ -20,7 +21,7 @@ export class CascadingSlotReel extends Component {
     @property
     itemSize = 145;
 
-    itemDisplayCount = BoardSize.ROW;
+    itemDisplayCount = CascadingSlotConfig.reelItemCount;
     protected items: CascadingSlotReelItem[] = [];
     public peekEffect = false;
 
@@ -75,8 +76,12 @@ export class CascadingSlotReel extends Component {
     }
 
     getItemNode(index: number): Node {
-        const item = this.items[index];
+        const item = this.getItem(index);
         return item.node;
+    }
+
+    getItem(index: number): CascadingSlotReelItem {
+        return this.items[index];
     }
 
     addItems(data: number[]): CascadingSlotReelItem[] {

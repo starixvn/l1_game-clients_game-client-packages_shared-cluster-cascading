@@ -1,13 +1,14 @@
 import gc from "@sg/game-client-base";
-import { _decorator, instantiate, Label, Node, NodePool, Prefab, sp, tween, UIOpacity, v3, Vec3 } from "cc";
+import { _decorator, Color, instantiate, Label, Node, NodePool, Prefab, sp, tween, UIOpacity, UIRenderer, v3, Vec3 } from "cc";
 import { AudioIds } from "db://assets/game/audios/AudioIds";
-import { CascadingSlotState } from "db://shared-cluster-cascading/cascading-slot-state";
+import { CascadingSlotState } from "db://shared-cascading-slot/cascading-slot-state";
 import { AudioUtils } from "db://shared-components/game/audios/utils";
 import { bundleManager } from "db://shared-components/shared/common-components/bundle-manager/bundle-manager";
 import { ObserverComponent } from "db://shared-components/shared/common-components/observer-component/scripts/observer-component";
 import { AnimationUtils, ComponentUtils } from "db://shared-components/shared/utils";
 import { random } from "lodash-es";
 import Observer from "observer";
+import { CascadingSlotConfig } from "../../../cascading-slot-base-configs";
 import {
     BoardSize,
     convertBoardValue,
@@ -70,7 +71,7 @@ export class CascadingSlotBoard extends ObserverComponent {
         this.node.children.forEach((child) => {
             const slotReel = child.getComponent(CascadingSlotReel);
             if (slotReel) {
-                slotReel.itemDisplayCount = BoardSize.ROW;
+                slotReel.itemDisplayCount = CascadingSlotConfig.reelItemCount;
                 slotReel.createReel();
                 this.reels.push(slotReel);
             }
@@ -341,6 +342,55 @@ export class CascadingSlotBoard extends ObserverComponent {
         }
         await Promise.all(this.reels.map((reel) => reel.highlightScatterItems()));
         this.handleHighlightScattersCompleted(true);
+    }
+
+    showNoWinBoard() {
+        if (!this.effectContainer) {
+            return;
+        }
+        this.effectContainer.active = true;
+        const uiRenderer = this.effectContainer.getComponent(UIRenderer);
+        const color = uiRenderer.color;
+        uiRenderer.color = new Color(color.r, color.g, color.b, color.a * 0.7);
+    }
+
+    highlightExplodedSymbols(explodedSymbols: number[][]) {
+        if (!this.effectContainer) {
+            return;
+        }
+        this.effectContainer.active = true;
+        explodedSymbols.forEach((symbols, reelIndex) => {
+            symbols.forEach((symbol, index) => {
+                if (symbol !== -1) {
+                    const item = this.reels[reelIndex].getItem(index);
+                    ComponentUtils.moveToOtherNode(item.node, this.effectContainer);
+                }
+            });
+        });
+
+        this.reels.forEach(reel => {
+            const items = reel.getItems();
+            items.forEach((item) => {
+                if (item.isMultiplierSymbol) {
+                    ComponentUtils.moveToOtherNode(item.node, this.effectContainer);
+                }
+            });
+        });
+    }
+
+    highlightScatterSymbolDetail() {
+        if (!this.effectContainer) {
+            return;
+        }
+        this.effectContainer.active = true;
+        this.reels.forEach(reel => {
+            const items = reel.getItems();
+            items.forEach((item) => {
+                if (item.isScatterSymbol) {
+                    ComponentUtils.moveToOtherNode(item.node, this.effectContainer);
+                }
+            });
+        });
     }
 
     public updateMultiplierItems(multipliers: number[]) {
@@ -745,3 +795,4 @@ export class CascadingSlotBoard extends ObserverComponent {
         });
     }
 }
+

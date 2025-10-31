@@ -12,7 +12,7 @@ import mobx from "mobx";
 import { BuyFreespinsHandler } from "../buy-freespins/handler/buy-freespins-handlers";
 import { BuyFreespinsStore } from "../buy-freespins/handler/buy-freespins-store";
 import { CascadingSlotState } from "../cascading-slot-state";
-import { SlotNotification } from "../cascading-slot-utils";
+import { DialogName, SlotNotification } from "../cascading-slot-utils";
 import { AutoPlayStore } from "../stores/auto-play-store";
 import { CascadingUIStore } from "../stores/cascading-ui-store";
 import { HoldActionStore } from "../stores/hold-action-store";
@@ -105,6 +105,17 @@ export class AutoPlayHandler implements gc.Shared.IHandler<number> {
             return;
         }
 
+        switch (evt.event) {
+            case FreeSpinsPromotionEvents.EFFECT_UNBOX_GIFT:
+            case FreeSpinsPromotionEvents.OPEN_PROMOTION_ENDED_POPUP:
+            case FreeSpinsPromotionEvents.OPEN_CLAIM_BONUS_NOTIFICATION:
+            case FreeSpinsPromotionEvents.OPEN_FREE_SPINS_PROMOTION:
+                this.cascadingUIHandler.triggerOpenDialog(evt.event);
+                break;
+            default:
+                break;
+        }
+
         if (evt.event === FreeSpinsPromotionEvents.BEGIN_USING_FBS) {
             this.cascadingUIStore.totalMultiplier = 0;
             return;
@@ -128,11 +139,11 @@ export class AutoPlayHandler implements gc.Shared.IHandler<number> {
     }
 
     placeBet() {
-        if (this.autoPlayStore.triggerBet) {
+        if (this.cascadingUIStore.isPlacingBet) {
             return;
         }
         this.autoPlayStore.triggerBet = {};
-        this.placeBetSilent();
+        this.cascadingUIStore.isPlacingBet = this.placeBetSilent();
     }
 
     placeBetSilent() {
@@ -143,6 +154,7 @@ export class AutoPlayHandler implements gc.Shared.IHandler<number> {
                 this.cascadingUIHandler.updateFreespinCountMsgBottom(this.cascadingUIStore.freeSpinsTotal - 1);
             }
         }
+        return success;
     }
 
     openAutoPlayPopup() {
@@ -151,6 +163,7 @@ export class AutoPlayHandler implements gc.Shared.IHandler<number> {
     }
 
     clickAutoPlay() {
+        this.cascadingUIHandler.triggerOpenDialog(DialogName.AUTO_SPIN);
         if (!this.autoPlayStore.isAutoplay && this.isValidBet()) {
             this.openAutoPlayPopup();
         } else {
@@ -229,6 +242,8 @@ export class AutoPlayHandler implements gc.Shared.IHandler<number> {
     async checkSpinNextRound() {
         this.cascadingUIStore.checkToSpinNext = true;
         this.autoPlayStore.triggerBet = null;
+        this.cascadingUIStore.isPlacingBet = false;
+
         this.fsbPromotionUIStore.setActiveFreeSpin(FreeSpinSource.PROMOTION, this.cascadingUIStore.isUsedFSBPromotionBonus);
         this.buyFsHandler.showBuyFsCongratulation();
         this.fsbPromotionUIHandler.tryShowEndedPopup();

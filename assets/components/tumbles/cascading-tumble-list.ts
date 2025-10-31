@@ -1,5 +1,5 @@
 import { _decorator, instantiate, macro, Mask, Node, Prefab, ScrollView, SpriteAtlas, tween, UIOpacity, UITransform, v3, Vec3 } from "cc";
-import { CascadingUIStore } from "db://shared-cluster-cascading/stores/cascading-ui-store";
+import { CascadingUIStore } from "db://shared-cascading-slot/stores/cascading-ui-store";
 import { ObserverComponent } from "db://shared-components/shared/common-components/observer-component/scripts/observer-component";
 import Observer from "observer";
 import { WinIconDetail } from "../../cascading-slot-utils";

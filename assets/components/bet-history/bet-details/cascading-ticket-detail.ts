@@ -1,5 +1,6 @@
 import gc from "@sg/game-client-base";
 import { _decorator, Button, Color, instantiate, Label, Node, Prefab, sys } from "cc";
+import { GameServiceMessageCascading } from "db://shared-cascading-slot/game-messages-cascading";
 import { Dialog } from "db://shared-components/shared/common-components/dialogs/dialog";
 import { ObserverComponent } from "db://shared-components/shared/common-components/observer-component/scripts/observer-component";
 import Observer from "observer";
@@ -49,7 +50,7 @@ export class CascadingTicketDetail extends ObserverComponent {
 
     data: any = null;
 
-    setData(data: any) {
+    setData(data: { betHistoryLog: GameServiceMessageCascading.BetDetailData }) {
         const { betHistoryLog } = data;
         if (!betHistoryLog) {
             return;
@@ -70,6 +71,7 @@ export class CascadingTicketDetail extends ObserverComponent {
         let currWinTumble = 0;
 
         const freeSpinsWin = this.data.settlementResult.freeSpins?.win;
+        const isWinFreeSpin = this.data.settlementResult.freeSpins?.count > 0;
         let isShowNextRow = !isReachMaxWin;
         if (freeSpinsWin) {
             isShowNextRow = true;
@@ -84,6 +86,13 @@ export class CascadingTicketDetail extends ObserverComponent {
             }
             const newTumbleMultipliers = [...tumble.multipliers];
             control.setDataResultBoard(tumble.originalBoard, newTumbleMultipliers);
+            if (tumble.explodedSymbols) {
+                control.highlightExplodedSymbols(tumble.explodedSymbols);
+            } else if (isWinFreeSpin) {
+                control.highlightScatterSymbolDetail();
+            } else {
+                control.showNoWinBoard();
+            }
         });
         this.handleMultiplierData(betHistoryLog);
         this.winTotal.string = gc.FormatUtils.numberWithCommas(betHistoryLog.betwin, 2, false);
@@ -131,6 +140,10 @@ export class CascadingTicketDetail extends ObserverComponent {
 
     showBetDetail(data: any) {
         this.setData(data);
+        const dialog = this.getComponent(Dialog);
+        if (dialog && !dialog.autoShowWhenEnable) {
+            dialog.show();
+        }
     }
 
     @handle(gc.Audios.AudioHandler, (handle) => handle.playSFX(gc.Audios.AudioIds.CLICK))

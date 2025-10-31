@@ -1,11 +1,19 @@
 import gc from '@sg/game-client-base';
-import { _decorator, Color, EventTouch, Label, Node } from 'cc';
+import { _decorator, Color, Label, Node, tween, Vec3, ScrollView } from 'cc';
 import { CascadingTicketDetail } from '../../bet-details/cascading-ticket-detail';
 import { CascadingBetHistoryTable } from '../../cascading-bet-history-table';
 import Pagination from 'db://shared-components/game/pagination/scripts/components/pagination';
 import Observer from 'observer';
+import TouchSwipeBase from 'db://shared-components/shared/common-components/touch-swipe-base';
+import { AudioUtils } from 'db://shared-components/game/audios/utils';
 const { ccclass, property } = _decorator;
 const { render } = Observer;
+interface PortraitBetHistoryLog extends gc.BetHistory.BetHistoryLog {
+    id: number;
+}
+interface PortraitBetHistoryModel extends gc.BetHistory.BetHistoryModel {
+    betLogs: PortraitBetHistoryLog[];
+}
 
 @ccclass
 export class PortraitCascadingTicketDetail extends CascadingTicketDetail {
@@ -20,6 +28,11 @@ export class PortraitCascadingTicketDetail extends CascadingTicketDetail {
     @property(Label)
     multiplierDetail: Label = null;
 
+    @property(ScrollView)
+    scrollView: ScrollView = null;
+
+    @property(TouchSwipeBase)
+    PortraitTouchSwipeHandler: TouchSwipeBase = null;
 
     @property(Node)
     btnNext: Node = null;
@@ -27,39 +40,56 @@ export class PortraitCascadingTicketDetail extends CascadingTicketDetail {
     @property(Node)
     btnPrevious: Node = null;
 
-    public betHistory: any[] = [];
-    public betHistoryDetial: any = null;
+    public betHistory: PortraitBetHistoryLog[] = [];
+    public betHistoryDetail: { betHistoryLog: gc.BetHistory.BetHistoryLog } = null;
     private currentId = 0;
-    private pagination: any = null;
+    private pagination: Pagination = null;
     private isNavigatingToNextPage = false;
+    private isAnimating = false;
 
-    private touchStart = 0;
-    private touchStartY = 0;
-    private hasTriggeredSwipe = false;
-    private readonly MIN_SWIPE_DISTANCE = 200;
-    private readonly MAX_VERTICAL_DISTANCE = 200;
+    onLoad() {
+        this.setupTouchHandler();
+        super.onLoad();
+    }
 
-
-
-    @render(gc.BetHistory.BetHistoryStore, (store) => store.betHistoryModel, { fireImmediately: true })
-    showBetHistory(betHistoryModel: gc.BetHistory.BetHistoryModel) {
-        const { betLogs } = betHistoryModel;
-        this.betHistory = betLogs;
-        this.handleBetHistorySelection();
-        if (betLogs.length <= 1) {
-            this.btnNext.active = false;
-            this.btnPrevious.active = false;
+    private setupTouchHandler() {
+        if (this.PortraitTouchSwipeHandler && this.PortraitTouchSwipeHandler.swipeCallback) {
+            this.PortraitTouchSwipeHandler.swipeCallback = (isLeft: boolean) => {
+                if (isLeft) {
+                    this.onClickNextHistoryDetail();
+                } else {
+                    this.onClickPreviousHistoryDetail();
+                }
+            }
         }
     }
 
+
+    @render(gc.BetHistory.BetHistoryStore, (store) => store.betHistoryModel, { fireImmediately: true })
+    showBetHistory(betHistoryModel: PortraitBetHistoryModel) {
+        const { betLogs } = betHistoryModel;
+        this.betHistory = betLogs;
+        this.handleBetHistorySelection();
+        this.updateNavigationButtons(betLogs);
+    }
+
+
+    private updateNavigationButtons(betHistoryLog: PortraitBetHistoryLog[]) {
+        const currentIndex = this.findCurrentIndex();
+        const isAtFirstElement = currentIndex === 0;
+        const isAtLastElement = currentIndex === betHistoryLog.length - 1;
+        this.btnNext.active = !isAtFirstElement && this.betHistory.length > 1 || this.pagination.currentPage > 1;
+        this.btnPrevious.active = !isAtLastElement || this.pagination.currentPage < this.pagination.totalPages;
+    }
+
     private handleBetHistorySelection() {
-        if (this.betHistory.length > 0) {
+        if (this.betHistory && this.betHistory.length > 0) {
             const currentItemExists = this.betHistory.find(item => item.id === this.currentId);
             if (!currentItemExists || this.currentId === 0) {
                 // Select appropriate item based on navigation direction
                 const targetItem = this.isNavigatingToNextPage ? this.betHistory[0] : this.betHistory[this.betHistory.length - 1];
                 this.currentId = targetItem.id;
-                this.betHistoryDetial = {
+                this.betHistoryDetail = {
                     betHistoryLog: targetItem
                 };
                 this.clearContent();
@@ -77,145 +107,148 @@ export class PortraitCascadingTicketDetail extends CascadingTicketDetail {
         }
         super.setData(data);
         const { betHistoryLog } = data;
+
         if (!this.pagination) {
             this.pagination = this.node?.scene?.getComponentInChildren(Pagination);
-
         }
-        if (betHistoryLog) {
-            this.timeDetail.string = gc.DateTimeUtils.getStringDateByTime(betHistoryLog.time);
-            this.betLevelDetail.string = betHistoryLog.betLevel;
-            this.coinValueDetail.string = betHistoryLog.coinValue;
-            this.totalBetDetail.string = betHistoryLog.freeSpin ? "0" : gc.FormatUtils.numberWithCommas(betHistoryLog.totalAmount, 2)
-            this.currentId = betHistoryLog.id;
-            if (this.multiplierNode.active) {
-                this.multiplierDetail.string = `(${betHistoryLog.totalTumbleWin}x${betHistoryLog.totalMultiplier})`;
-            }
-            this.multiplierDetail.node.active = this.multiplierNode.active;
-        }
-        this.touchEvents('add');
-    }
 
-    onDestroy() {
-        super.onDestroy();
-        this.touchEvents('remove');
-    }
-
-    private touchEvents(type: string) {
-        const parentContent = this.content?.getParent();
-        if (parentContent) {
-            if (type === 'add') {
-                parentContent.on(Node.EventType.TOUCH_START, this.onTouchStart, this);
-                parentContent.on(Node.EventType.TOUCH_MOVE, this.onTouchMove, this);
-            } else {
-                parentContent.off(Node.EventType.TOUCH_START, this.onTouchStart, this);
-                parentContent.off(Node.EventType.TOUCH_MOVE, this.onTouchMove, this);
-            }
-        }
-    }
-
-
-    onTouchStart(event: EventTouch) {
-        const location = event.getLocation();
-        this.touchStart = location.x;
-        this.touchStartY = location.y;
-        this.hasTriggeredSwipe = false;
-    }
-
-    onTouchMove(event: EventTouch) {
-        if (this.hasTriggeredSwipe) {
+        if (!betHistoryLog) {
             return;
         }
 
-        const location = event.getLocation();
-        const currentX = location.x;
-        const currentY = location.y;
-        const touchDiffX = currentX - this.touchStart;
-        const touchDiffY = Math.abs(currentY - this.touchStartY);
-        const swipeDistance = Math.abs(touchDiffX);
+        this.updateBasicDetails(betHistoryLog);
+        this.updateMultiplierDetails(betHistoryLog);
+        this.updateNavigationButtons(this.betHistory);
+    }
 
-        if (touchDiffY > this.MAX_VERTICAL_DISTANCE) {
-            this.isNavigatingToNextPage = false;
+    private updateBasicDetails(betHistoryLog: any) {
+        this.timeDetail.string = gc.DateTimeUtils.getStringDateByTime(betHistoryLog.time);
+        this.betLevelDetail.string = betHistoryLog.betLevel;
+        this.coinValueDetail.string = betHistoryLog.coinValue;
+        this.totalBetDetail.string = betHistoryLog.freeSpin ? "0" : gc.FormatUtils.numberWithCommas(betHistoryLog.totalAmount, 2);
+        this.currentId = betHistoryLog.id;
+    }
+
+    private updateMultiplierDetails(betHistoryLog: any) {
+        if (!this.multiplierNode.active) {
+            this.multiplierDetail.node.active = false;
             return;
         }
 
-        if (swipeDistance > this.MIN_SWIPE_DISTANCE && touchDiffY <= this.MAX_VERTICAL_DISTANCE) {
-            this.hasTriggeredSwipe = true; // Prevent multiple triggers
-            if (touchDiffX > 0) {
-                this.onClickPreviousHistoryDetail();
-            } else {
-                this.onClickNextHistoryDetail();
-            }
-        }
+        const multiplierString = this.calculateMultiplierString(betHistoryLog);
+        this.multiplierDetail.string = multiplierString;
+        this.multiplierDetail.node.active = true;
     }
 
+    private calculateMultiplierString(betHistoryLog: any): string {
+        const winFreeSpin = gc.FormatUtils.numberWithCommas(betHistoryLog.settlementResult.freeSpins?.win, 2, false);
+        const hasWinFreeSpin = betHistoryLog.settlementResult.freeSpins?.win > 0;
+        const totalTumbleWin = gc.FormatUtils.numberWithCommas(betHistoryLog.totalTumbleWin, 2, false);
 
+        const multiplier = betHistoryLog.freeSpin ? betHistoryLog.totalMultiplier : betHistoryLog.multiplier;
+        const baseString = `${totalTumbleWin}x${multiplier}`;
 
-
-
-
-
+        if (hasWinFreeSpin) {
+            return `((${baseString}) + ${winFreeSpin})`;
+        }
+        return `(${baseString})`;
+    }
     handleMultiplierData(data: any) {
         super.handleMultiplierData(data);
-        this.textMultiplier.string = `${gc.Translator.gameTranslate('total_multiplier')}:`;
+        this.textMultiplier.string = `${gc.Translator.gameTranslate('cascadingslot.header_total_multiplier')}:`;
         if (data.freeSpin) {
-            this.textMultiplier.node.getComponent(Label).color = new Color("FFFC00");
+            this.textMultiplier.node.getComponent(Label).color = new Color("EDBB02");
             this.multiplierTotal.node.getComponent(Label).color = new Color("#06F");
+            this.multiplierTotal.string = `x${data.totalMultiplier}`;
+        } else {
+            this.multiplierTotal.string = `x${data.multiplier}`;
         }
     }
 
-    onClickClose() {
+    onClickCloseDetail() {
         const betHistoryTable = this.node.scene.getComponentInChildren(CascadingBetHistoryTable);
         if (betHistoryTable) {
             betHistoryTable.onClickClose();
-            super.onClickClose();
         }
+        this.onClickClose();
     }
 
 
     onClickBackToHistory() {
-        super.onClickClose();
+        this.onClickClose();
     }
 
     findCurrentIndex() {
-        return this.betHistory.findIndex((item) => item.id === this.currentId);
+        return this.betHistory.findIndex((item) => item.id === this.currentId)
     }
 
     onClickPreviousHistoryDetail() {
         const index = this.findCurrentIndex();
-        if (index > 0) {
-            this.currentId = (this.betHistory[index - 1]).id;
-            this.updateHistoryDetail();
-        } else if (index === 0) {
+        this.resetScrollPosition();
+        if (this.betHistory && index >= 0 && index < this.betHistory.length - 1) {
+            this.slideAnimation(false, () => {
+                this.currentId = this.betHistory[index + 1].id;
+                this.updateHistoryDetail();
+            });
+        } else if (this.betHistory && index === this.betHistory.length - 1) {
             if (this.pagination) {
                 const currentPage = this.pagination.currentPage;
-                if (currentPage > 1) {
-                    this.isNavigatingToNextPage = false; // Going to previous page, select last item
-                    this.pagination.hanldePreviousPage();
-                } else {
-                    console.log('first page');
+                const totalPages = this.pagination.totalPages;
+                if (currentPage < totalPages) {
+                    this.slideAnimation(false, () => {
+                        this.isNavigatingToNextPage = true; // Going to next page, select first item
+                        this.pagination.hanldeNextPage();
+                    });
                 }
             }
         }
     }
     onClickNextHistoryDetail() {
         const index = this.findCurrentIndex();
-        if (index >= 0 && index < this.betHistory.length - 1) {
-            this.currentId = (this.betHistory[index + 1]).id;
-            this.updateHistoryDetail();
-        } else if (index === this.betHistory.length - 1) {
+        this.resetScrollPosition();
+        if (index > 0 && this.betHistory[index - 1]) {
+            this.slideAnimation(true, () => {
+                this.currentId = this.betHistory[index - 1].id;
+                this.updateHistoryDetail();
+            });
+        } else if (index === 0) {
             if (this.pagination) {
                 const currentPage = this.pagination.currentPage;
-                const totalPages = this.pagination.totalPages;
-                if (currentPage < totalPages) {
-                    this.isNavigatingToNextPage = true; // Going to next page, select first item
-                    this.pagination.hanldeNextPage();
-                } else {
-                    console.log('last page');
+                if (currentPage > 1) {
+                    this.slideAnimation(true, () => {
+                        this.isNavigatingToNextPage = false; // Going to previous page, select last item
+                        this.pagination.hanldePreviousPage();
+                    });
                 }
             }
         }
     }
+    slideAnimation(isRight: boolean, onComplete?: () => void) {
+        if (!this.content || this.isAnimating) {
+            return;
+        }
 
+        this.isAnimating = true;
+        const pos = this.content.position;
+        const moveX = isRight ? -800 : 800;
+
+        tween(this.content)
+            .to(0.2, { position: new Vec3(pos.x + moveX, pos.y, pos.z) })
+            .call(() => {
+                onComplete?.();
+                this.content.setPosition(new Vec3(pos.x - moveX, pos.y, pos.z));
+                tween(this.content)
+                    .to(0.2, { position: pos })
+                    .call(() => this.isAnimating = false)
+                    .start();
+            })
+            .start();
+    }
+    private resetScrollPosition() {
+        if (this.scrollView) {
+            this.scrollView.scrollToTop(0);
+        }
+    }
 
     private resetMultiplierNode() {
         if (!this.multiplierNode) {
@@ -238,13 +271,16 @@ export class PortraitCascadingTicketDetail extends CascadingTicketDetail {
     }
 
 
+
+
     updateHistoryDetail() {
-        const newItem = this.betHistory.find(item => item.id === this.currentId);
-        this.betHistoryDetial = {
+        AudioUtils.playClick();
+        const newItem = this.betHistory ? this.betHistory.find(item => item.id === this.currentId) : null;
+        this.betHistoryDetail = {
             betHistoryLog: newItem
         }
         this.clearContent();
-        this.setData(this.betHistoryDetial);
+        this.setData(this.betHistoryDetail);
     }
 
 }

@@ -9,19 +9,24 @@ import Observer from "observer";
 
 import { FSBPromotionUIManager } from "db://shared-common-slot/fsb-promotion/scripts/components/fsb-promotion-ui-manager";
 import { FSBPromotionUIHandler } from "db://shared-common-slot/fsb-promotion/scripts/handlers/fsb-promotion-ui-handler";
-import { FreeSpinSignal, FreeSpinSource, FSBPromotionUIStore } from "db://shared-common-slot/fsb-promotion/scripts/stores/fsb-promotion-ui-store";
+import {
+    FreeSpinSignal,
+    FreeSpinSource,
+    FSBPromotionUIStore,
+} from "db://shared-common-slot/fsb-promotion/scripts/stores/fsb-promotion-ui-store";
 import { GameComponentBase } from "db://shared-components/game/scripts/components/game-component-base";
 import { bundleManager } from "db://shared-components/shared/common-components/bundle-manager/bundle-manager";
 import { GameVisibility } from "db://shared-components/shared/common-components/game-visibility/game-visibility";
 import { GameVisibilityStore } from "db://shared-components/shared/common-components/game-visibility/game-visibility-store";
 import { CascadingSlotConfig } from "./cascading-slot-base-configs";
-import { ColorJson, convertData, GameFeatureJson, getCustomDuration, resourcesCache } from "./cascading-slot-utils";
+import { ColorJson, convertData, DialogName, GameFeatureJson, getCustomDuration, resourcesCache } from "./cascading-slot-utils";
 import { CascadingSlotBoard } from "./components/slot-board/components/cascading-slot-board";
 import { TotalMultiplierView } from "./components/total-multiplier/cascading-total-multiplier-view";
 import { TumbleWinWiew } from "./components/tumbles/tumble-win-view";
 import { AutoPlayHandler } from "./handlers/auto-play-handlers";
 import { CascadingSlotErrorHandler } from "./handlers/cascading-slot-error-handler";
 import { CascadingUIHandler } from "./handlers/cascading-ui-handler";
+import { CascadingSlotSettlementStore } from "./stores/cascading-slot-settlement-store";
 import { CascadingUIStore } from "./stores/cascading-ui-store";
 
 const { ccclass, property } = _decorator;
@@ -29,7 +34,7 @@ const { observer, render, handle } = Observer;
 const { Rounds, Connection, HideGame, Settlements, FormatUtils, RoundHistories } = gc;
 
 @ccclass
-export class ClusterCascadingGame extends GameComponentBase {
+export class CascadingSlotGame extends GameComponentBase {
     @property(CascadingSlotBoard)
     board: CascadingSlotBoard = null;
 
@@ -177,7 +182,7 @@ export class ClusterCascadingGame extends GameComponentBase {
         resourcesCache.slotSymbols = cache;
     }
 
-    // @render(CascadingSlotSettlementStore, (store) => store.finishData, { fireImmediately: false })
+    @render(CascadingSlotSettlementStore, (store) => store.finishData, { fireImmediately: false })
     async handleSettlement(finishData: any) {
         if (!finishData) {
             return;
@@ -186,6 +191,8 @@ export class ClusterCascadingGame extends GameComponentBase {
         const {
             win,
             bigWin,
+            megaWin,
+            superWin,
             totalFreeSpins,
             isFreeSpin,
             multiplier,
@@ -212,6 +219,25 @@ export class ClusterCascadingGame extends GameComponentBase {
             this.handleTotalWin({ win: win, isActualWin: true });
         }
         this.updateTotalWinPromo({ win, totalFreeSpins });
+        this.showTotalMultiplierView(totalMultiplier, isFreeSpin, winMultiplier);
+        reachMaxWin && this.setReachMaxWin(true);
+        this.setTotalMultiplierValue(totalMultiplier);
+
+        const isHaveBigWin = bigWin || megaWin || superWin;
+        this.handleHaveBigWin(isHaveBigWin);
+        this.updateBigWinAmount(win);
+
+        this.setFreeSpinsByRound(freeSpins);
+        this.setFreeSpinsTotal(totalFreeSpins);
+        this.handleHaveFreeSpin(freeSpins > 0);
+
+        const noWinMoreFreespins = freeSpins <= 0;
+        if (noWinMoreFreespins && !isHaveBigWin) {
+            this.handleFreeSpinEffectCompleted(true);
+        }
+    }
+
+    protected async showTotalMultiplierView(totalMultiplier: number, isFreeSpin: boolean, winMultiplier: boolean) {
         const needShowTotalMultiplier = totalMultiplier > 0;
         if (winMultiplier && isFreeSpin && needShowTotalMultiplier) {
             await this.totalMultiplierView.showView(true);
@@ -220,19 +246,6 @@ export class ClusterCascadingGame extends GameComponentBase {
                 this.effectContainer,
                 this.totalMultiplierView.total.node
             );
-        }
-        reachMaxWin && this.setReachMaxWin(true);
-        this.setTotalMultiplierValue(totalMultiplier);
-
-        this.handleHaveBigWin(bigWin);
-        this.updateBigWinAmount(win);
-
-        this.setFreeSpinsByRound(freeSpins);
-        this.setFreeSpinsTotal(totalFreeSpins);
-        this.handleHaveFreeSpin(freeSpins > 0);
-
-        if (freeSpins <= 0 && !bigWin) {
-            this.handleFreeSpinEffectCompleted(true);
         }
     }
 
@@ -306,15 +319,6 @@ export class ClusterCascadingGame extends GameComponentBase {
             return;
         }
         this.lblBalance && (this.lblBalance.string = FormatUtils.truncateFixedDecimals(value, 2).toString());
-    }
-
-    @handle(CascadingUIHandler, (handler, isVisible: boolean) => handler.handleSymbolPreviewVisiblity(isVisible))
-    handleSymbolPreviewVisiblity(isVisible: boolean) {
-        return isVisible;
-    }
-
-    hideSymbolPreview() {
-        this.handleSymbolPreviewVisiblity(false);
     }
 
     @handle(gc.Auth.AuthHandlers.GetBalance)
@@ -392,4 +396,7 @@ export class ClusterCascadingGame extends GameComponentBase {
     updateTotalWinPromo(payload: { win: number; totalFreeSpins: number }) {
         return payload;
     }
+
+    @handle(CascadingUIHandler, (handler) => handler.triggerOpenDialog(DialogName.DUMMY_DIALOG))
+    clickOnBackground() { }
 }

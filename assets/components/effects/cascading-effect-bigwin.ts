@@ -51,6 +51,7 @@ export class CascadingEffectBigwin extends ObserverComponent {
 
     private skipClickCount = 0;
     private readonly MAX_SKIP_CLICK_COUNT = 2;
+    private bigWinRange = [];
 
     setAmount(data: BigWinType) {
         const { amount } = data;
@@ -68,18 +69,44 @@ export class CascadingEffectBigwin extends ObserverComponent {
         if (totalBet === 0) {
             return;
         }
-        const valueRatio = betWin / totalBet;
-        if (valueRatio >= 6) {
+
+        const { isMega, isSuper } = this.checkBigWinThresholds(betWin, totalBet);
+
+        if (isSuper) {
             this.isChangeLevelSuper && this.setAnimationChangeSuper();
-        } else if (valueRatio >= 3) {
+        } else if (isMega) {
             this.isChangeLevelMega && this.setAnimationChangeMega();
         } else {
             this.isChangeLevelBig && this.setAnimationChangeBig();
         }
     }
 
+    handleLogBigWinRange(superThreshold: number, megaThreshold: number) {
+        if (typeof superThreshold !== "number" || typeof megaThreshold !== "number") {
+            console.log("[bigWinRange] is not a number", {
+                bigWinRange: this.bigWinRange,
+            });
+        }
+    }
+
+    private checkBigWinThresholds(betWin: number, totalBet: number) {
+        if (totalBet === 0) {
+            return { isMega: false, isSuper: false };
+        }
+        const valueRatio = betWin / totalBet;
+
+        const megaThreshold = +this.bigWinRange?.[1];
+        const superThreshold = +this.bigWinRange?.[2];
+        this.handleLogBigWinRange(superThreshold, megaThreshold);
+
+        const isSuper = valueRatio >= superThreshold;
+        const isMega = valueRatio >= megaThreshold && !isSuper;
+
+        return { isMega, isSuper };
+    }
+
     showHideBigWinNode(show: boolean) {
-        this.nodeBigWin.active = show;
+        this.nodeBigWin && (this.nodeBigWin.active = show);
     }
 
     async setAnimationChangeSuper() {
@@ -176,6 +203,10 @@ export class CascadingEffectBigwin extends ObserverComponent {
     }
 
     private winAmountForNoAnim(betWin: number) {
+        const { isMega, isSuper } = this.checkBigWinThresholds(betWin, this.totalBet);
+        if (isMega || isSuper) {
+            this.showHideBigWinNode(false);
+        }
         this.changeFrameForBigWinLevel(betWin, this.totalBet);
         this.setAmount({ amount: betWin });
     }
@@ -215,7 +246,9 @@ export class CascadingEffectBigwin extends ObserverComponent {
             this.isChangeLevelMega = true;
             this.winAmountForNoAnim(this.winAmount);
             const ratio = this.winAmount / this.totalBet;
-            this.showHideBigWinNode(ratio < 3);
+            const megaThreshold = this.bigWinRange?.[2];
+            const shouldShow = typeof megaThreshold === "number" ? ratio < megaThreshold : true;
+            this.showHideBigWinNode(shouldShow);
             this.handleBigWinActions(true);
         } else {
             this.floatNumberBigWin({
@@ -267,5 +300,9 @@ export class CascadingEffectBigwin extends ObserverComponent {
     @handle(CascadingUIHandler, (handler, fadeBGM: boolean) => handler.handleFadeBGM(fadeBGM))
     handleFadeBGM(fadeBGM: boolean) {
         return fadeBGM;
+    }
+
+    setBigWinRange(bigWinRange: number[]) {
+        this.bigWinRange = bigWinRange;
     }
 }

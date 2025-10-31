@@ -4,7 +4,8 @@ import { StatusButton } from "db://shared-components/shared/common-components/bu
 import { ObserverComponent } from "db://shared-components/shared/common-components/observer-component/scripts/observer-component";
 import Observer from "observer";
 
-import { CascadingUIStore } from "db://shared-cluster-cascading/stores/cascading-ui-store";
+import { CascadingUIStore } from "db://shared-cascading-slot/stores/cascading-ui-store";
+import { DialogName } from "../../cascading-slot-utils";
 import { BetControlHandlers } from "../../handlers/bet-control-handlers";
 import { BetControlStore } from "../../stores/bet-control-store";
 
@@ -63,7 +64,7 @@ export class CascadingBetControl extends ObserverComponent {
 
     @render(BetControlStore, (store) => store.totalBet)
     private renderTotalBet(totalBet: number) {
-        this.totalBet.string = totalBet.toString();
+        this.totalBet.string = gc.FormatUtils.numberWithCommas(totalBet, 2, true);
     }
 
     @render(BetControlStore, (store) => store.betLevel)
@@ -76,7 +77,14 @@ export class CascadingBetControl extends ObserverComponent {
         this.coinValue.string = coinValue.toString();
     }
 
-    @handle(BetControlHandlers, (handle, status: boolean) => handle.updateStatusBetAmountPopup())
+    @render(CascadingUIStore, (store) => store.dialogOpenEvent, { fireImmediately: false })
+    private renderDialogOpenEvent(dialogOpenEvent: { name: string }) {
+        if (dialogOpenEvent?.name !== DialogName.BET_CONTROL) {
+            this.onCloseBetControl();
+        }
+    }
+
+    @handle(BetControlHandlers, (handle) => handle.closeBetControl())
     onCloseBetControl() { }
 
     @handle(BetControlHandlers, (handle) => handle.changeBetLevel(false))

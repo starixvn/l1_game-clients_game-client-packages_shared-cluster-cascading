@@ -1,11 +1,11 @@
+import gc from "@sg/game-client-base";
 import { _decorator, Label, Node } from "cc";
 import { StatusButton } from "db://shared-components/shared/common-components/button/status-button";
+import { ChangeNodeColor } from "db://shared-components/shared/common-components/change-node-color";
 import { ObserverComponent } from "db://shared-components/shared/common-components/observer-component/scripts/observer-component";
 import Observer from "observer";
-
-import { ChangeNodeColor } from "db://shared-components/shared/common-components/change-node-color";
-import { resourcesCache } from "../../cascading-slot-utils";
-import { CascadingTotalBetHandlers } from "../../handlers/cascading-total-bet-handlers";
+import { DialogName, resourcesCache } from "../../cascading-slot-utils";
+import { BetControlHandlers } from "../../handlers/bet-control-handlers";
 import { CascadingUIHandler } from "../../handlers/cascading-ui-handler";
 import { BetControlStore } from "../../stores/bet-control-store";
 import { CascadingUIStore } from "../../stores/cascading-ui-store";
@@ -43,7 +43,7 @@ export class CascadingTotalBet extends ObserverComponent {
 
     @render(BetControlStore, (store) => store.totalBet)
     private updateTotalBet(totalBet: number) {
-        this.totalBetLabel.string = totalBet.toString();
+        this.totalBetLabel.string = gc.FormatUtils.numberWithCommas(totalBet, 2, true);
     }
 
     @render(BetControlStore, (store) => store.interactableTotalBet)
@@ -52,9 +52,9 @@ export class CascadingTotalBet extends ObserverComponent {
         this.buttonDecrease.interactable = interactableTotalBet.decrease;
     }
 
-    @handle(CascadingTotalBetHandlers, (handle, status: boolean) => handle.showBetControl())
+    @handle(BetControlHandlers, (handle) => handle.showBetControl())
     onClickOpenBetControl() {
-        this.hideSymbolPreview();
+        this.triggerOpenBetControl();
     }
 
     @render(CascadingUIStore, (store) => store.disabledOpenInputBet)
@@ -72,10 +72,8 @@ export class CascadingTotalBet extends ObserverComponent {
         this.betControl?.onClickIncreaseTotalBet();
     }
 
-    @handle(CascadingUIHandler, (handler, isVisible: boolean) => handler.handleSymbolPreviewVisiblity(isVisible))
-    hideSymbolPreview() {
-        return false;
-    }
+    @handle(CascadingUIHandler, (handler) => handler.triggerOpenDialog(DialogName.BET_CONTROL))
+    triggerOpenBetControl() { }
 
     updateColor() {
         this.node.getComponentsInChildren(ChangeNodeColor).forEach((comp) => {

@@ -15,15 +15,18 @@ export class CascadingBottomArea extends ObserverComponent {
     @property(Label)
     totalWinLabel: Label = null;
 
-    private colorConfig: any;
+    protected colorConfig: any;
 
     onLoad(): void {
         this.colorConfig = resourcesCache.colorJson;
         this.updateColor();
         super.onLoad();
     }
-    @render(CascadingUIStore, (store) => store.totalWin, { fireImmediately: false })
+    @render(CascadingUIStore, (store) => store.totalWin)
     async handleSettlement(totalTumbleWin: number) {
+        if (!this.totalWinLabel) {
+            return;
+        }
         if (totalTumbleWin === 0) {
             this.totalWinLabel.string = totalTumbleWin.toString();
             return;
@@ -35,14 +38,18 @@ export class CascadingBottomArea extends ObserverComponent {
         this.node.getComponentsInChildren(ChangeNodeColor).forEach((comp) => {
             const labelComp = comp.node.getComponent(Label);
             if (labelComp) {
-                comp.updateColor(
-                    comp.node.getComponent(LocalizedLabel) ? this.colorConfig.bottomAreaTextColor : this.colorConfig.bottomAreaNumberColor
-                );
+                comp.updateColor(this.updateColorLabel(comp));
             } else {
                 comp.updateColor(this.colorConfig.bottomAreaButtonBorderColor);
             }
         });
 
-        this.totalWinLabel.node.getComponent(Label).color = new Color().fromHEX(this.colorConfig.bottomAreaWinAmountColor);
+        if (this.totalWinLabel) {
+            this.totalWinLabel.node.getComponent(Label).color = new Color().fromHEX(this.colorConfig.bottomAreaWinAmountColor);
+        }
+    }
+
+    updateColorLabel(comp: ChangeNodeColor) {
+        return comp.node.getComponent(LocalizedLabel) ? this.colorConfig.bottomAreaTextColor : this.colorConfig.bottomAreaNumberColor;
     }
 }

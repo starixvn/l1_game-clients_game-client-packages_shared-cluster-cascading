@@ -1,8 +1,8 @@
 import gc from "@sg/game-client-base";
 import { _decorator, Component, instantiate, Label, Node, Prefab, sys, UITransform } from "cc";
-import { convertData } from "db://shared-cluster-cascading/cascading-slot-utils";
-import { CascadingSlotBoard } from "db://shared-cluster-cascading/components/slot-board/components/cascading-slot-board";
-import { CascadingTumbleItem } from "db://shared-cluster-cascading/components/tumbles/cascading-tumble-item";
+import { convertBoardValue, convertData } from "db://shared-cascading-slot/cascading-slot-utils";
+import { CascadingSlotBoard } from "db://shared-cascading-slot/components/slot-board/components/cascading-slot-board";
+import { CascadingTumbleItem } from "db://shared-cascading-slot/components/tumbles/cascading-tumble-item";
 import Observer from "observer";
 
 const { ccclass, property } = _decorator;
@@ -60,31 +60,36 @@ export class CascadingTicketDetailItem extends Component {
         const isFreeSpin = freeSpins?.odds > 0 || winFreeSpinOnlyCash;
         const freeSpin = data.freeSpin;
         if (index === data.settlementResult.tumbles.length - 1 && isFreeSpin) {
-            this.setDataHaveFreeSpin({
+            tumbleNode = this.setDataHaveFreeSpin({
                 ...freeSpins,
                 index,
                 currWinTumble,
                 extraFreeSpin: freeSpin,
             });
-        } else {
-            if (tumble.win > 0) {
-                Object.entries<{ count; win }>(tumble.icons).forEach(([key, value]) => {
-                    tumbleNode = instantiate(this.tumbleWinDetailItemPrefab);
-                    const control = tumbleNode.getComponent(CascadingTumbleItem);
-                    const { count, win } = value;
-                    control.setData(+key, count, win);
-                    numberOfIcon++;
-                    this.content.addChild(tumbleNode);
-                });
-                this.calculateHeightRow(numberOfIcon);
-            } else {
-                tumbleNode = instantiate(this.noTumbleWinDetailPrefab);
+
+        } else if (tumble.win > 0) {
+            Object.entries<{ count; win }>(tumble.icons).forEach(([key, value]) => {
+                tumbleNode = instantiate(this.tumbleWinDetailItemPrefab);
+                const control = tumbleNode.getComponent(CascadingTumbleItem);
+                const { count, win } = value;
+                control.setData(+key, count, win);
+                numberOfIcon++;
                 this.content.addChild(tumbleNode);
-            }
+            });
+            this.calculateHeightRow(numberOfIcon);
+        }
+
+        if (tumble.win === 0) {
+            tumbleNode = instantiate(this.noTumbleWinDetailPrefab);
+            this.content.addChild(tumbleNode);
         }
 
         this.win.string = gc.FormatUtils.numberWithCommas(currWinTumble, 2, false);
-        this.index.string = (index + 1).toString();
+        this.updateIndexLabel(index);
+    }
+
+    protected updateIndexLabel(index: string | number) {
+        this.index.string = typeof index === 'string' ? index : (index + 1).toString();
     }
 
     setDataHaveFreeSpin(data: FreeSpinData) {
@@ -95,11 +100,28 @@ export class CascadingTicketDetailItem extends Component {
         this.win.string = gc.FormatUtils.numberWithCommas(data.currWinTumble, 2, false);
         this.index.string = (data.index + 1).toString();
         this.calculateHeightRow(1);
+        return tumbleNode;
     }
 
     setDataResultBoard(symbols: string, multiplier: number[]) {
         const board = convertData(symbols);
         this.resultBoard.setData(board, multiplier);
+    }
+
+    showNoWinBoard() {
+        this.resultBoard.showNoWinBoard();
+    }
+
+    highlightExplodedSymbols(symbols: number[]) {
+        if (symbols.length === 0) {
+            return;
+        }
+        const values = convertBoardValue(symbols);
+        this.resultBoard.highlightExplodedSymbols(values);
+    }
+
+    highlightScatterSymbolDetail() {
+        this.resultBoard.highlightScatterSymbolDetail();
     }
 
     calculateHeightRow(numberOfIcon: number) {

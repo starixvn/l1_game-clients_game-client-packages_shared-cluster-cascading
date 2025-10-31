@@ -5,7 +5,7 @@ import { FSBPromotionUIStore } from "db://shared-common-slot/fsb-promotion/scrip
 import mobx from "mobx";
 import { BuyFreespinsStore } from "../buy-freespins/handler/buy-freespins-store";
 import { CascadingSlotState } from "../cascading-slot-state";
-import { calculateTotalBet, SlotNotification } from "../cascading-slot-utils";
+import { calculateTotalBet, DialogName, resourcesCache, SlotNotification } from "../cascading-slot-utils";
 import { GameServiceMessageCascading } from "../game-messages-cascading";
 import { BetControlStore } from "../stores/bet-control-store";
 import { CascadingSlotConfigsStore } from "../stores/cascading-slot-configs-store";
@@ -47,7 +47,7 @@ export class CascadingUIHandler implements gc.Shared.IMultipleHandlers {
         }, 0);
     }
 
-    handle() { }
+    handle() {}
 
     handleTotalWin({ win, isActualWin = false }) {
         this.uiStore.isActualWin = isActualWin;
@@ -83,11 +83,21 @@ export class CascadingUIHandler implements gc.Shared.IMultipleHandlers {
         this.uiStore.triggerCancelAutoPlay = {};
     }
 
-    handlePlaceBetFailed() {
+    handlePlaceBetFailed(clearFreeSpins = false) {
         this.changeCascadingState(CascadingSlotState.READY_BET);
-        this.resetBottomMessageState();
         this.uiStore.triggerCancelAutoPlay = {};
-        this.clearFreeSpins();
+        this.uiStore.isPlacingBet = false;
+
+        const isMessageForFreeSpins = this.uiStore.bottomMessageState === SlotNotification.FREESPINS;
+        if (!isMessageForFreeSpins || clearFreeSpins) {
+            this.resetBottomMessageState();
+        }
+        if (clearFreeSpins) {
+            this.clearFreeSpins();
+        }
+        if (this.uiStore.isFreeSpins) {
+            this.updateFreespinCountMsgBottom(this.uiStore.freeSpinsTotal);
+        }
     }
 
     resetProcessingBet() {
@@ -112,10 +122,11 @@ export class CascadingUIHandler implements gc.Shared.IMultipleHandlers {
         this.uiStore.multiplier = 0;
         if (!this.uiStore.isFreeSpins && !this.fsbPromotionUIStore.isFSBPromotionInProgress) {
             this.uiStore.totalMultiplier = 0;
+            this.uiStore.portraitshowTotalMultiplierView = false;
         }
         this.uiStore.totalWin = 0;
         this.uiStore.activePeekEffect = false;
-        this.handleSymbolPreviewVisiblity(false);
+        this.triggerOpenDialog(DialogName.DUMMY_DIALOG);
     }
 
     changeCascadingState(state: string) {
@@ -125,10 +136,6 @@ export class CascadingUIHandler implements gc.Shared.IMultipleHandlers {
 
     handleTurboModeUI(isTurboModeUI: boolean) {
         this.uiStore.isTurboModeUI = isTurboModeUI;
-    }
-
-    handleSymbolPreviewVisiblity(value: boolean) {
-        this.uiStore.isSymbolPreviewVisible = value;
     }
 
     handleBottomMessage(state: string) {
@@ -177,6 +184,9 @@ export class CascadingUIHandler implements gc.Shared.IMultipleHandlers {
     }
 
     handleTotalMultiplier(totalMultiplier: number) {
+        if (totalMultiplier > 0) {
+            this.uiStore.portraitshowTotalMultiplierView = true;
+        }
         this.uiStore.totalMultiplier = totalMultiplier;
     }
 
@@ -188,10 +198,9 @@ export class CascadingUIHandler implements gc.Shared.IMultipleHandlers {
         if (!this.settlementStore.finishData) {
             return;
         }
-        const { bigWin, freeSpins } = this.settlementStore.finishData;
 
-        const isPeekEffectSuccess = freeSpins > 0 && this.uiStore.activePeekEffect;
-        if (bigWin && !isPeekEffectSuccess) {
+        const isPeekEffectSuccess = this.settlementStore?.finishData?.freeSpins > 0 && this.uiStore.activePeekEffect;
+        if (bigwin && !isPeekEffectSuccess) {
             this.uiStore.haveBigWin = bigwin;
         } else {
             this.uiStore.isBigWinCompleted = true;
@@ -273,11 +282,22 @@ export class CascadingUIHandler implements gc.Shared.IMultipleHandlers {
     }
 
     handleTriggerDuringFreeSpinBonus(trigger = {}) {
+        if (!resourcesCache.gameFeatures?.allowFreeSpinsFeature) {
+            return;
+        }
         this.uiStore.triggerDuringFreeSpinBonus = trigger;
     }
 
     handleFadeBGM(fadeBGM: boolean) {
         this.uiStore.fadeBGM = { value: fadeBGM };
+    }
+
+    handleShowTotalMultiplierView(move: boolean) {
+        this.uiStore.portraitshowTotalMultiplierView = move;
+    }
+
+    triggerOpenDialog(name: string) {
+        this.uiStore.dialogOpenEvent = { name };
     }
 
     eventHandleList = [

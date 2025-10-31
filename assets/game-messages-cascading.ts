@@ -48,6 +48,7 @@ export namespace GameServiceMessageCascading {
         maxWinPerRound: number;
         odds: OddsConfig;
         totalMultiplier: number;
+        bigWinRange: number[];
 
         static eventName = "gameConfigs";
     }
@@ -71,6 +72,52 @@ export namespace GameServiceMessageCascading {
         rate: number;
         multiplier: number;
         static eventName = "trialUser";
+    }
+
+    export class GameInfoMsg {
+        volatility: number;
+        static eventName = "gameInfo";
+    }
+
+    export interface BetDetailData {
+        id: number;
+        time: string;
+        betLevel: string;
+        coinValue: number;
+        totalAmount: number;
+        betwin: number;
+        freeSpin: boolean;
+        buyFreeSpin: boolean;
+        reachMaxWin: boolean;
+        settlementResult: SettlementResultDetail;
+        totalMultiplier: number;
+        multiplier: number;
+        buyFreeSpinRefRoundId: any;
+        totalTumbleWin: number;
+    }
+
+    export interface TumbleDetail {
+        explodedSymbols?: number[];
+        newSymbols?: number[];
+        icons: {
+            [key: number]: {
+                count: number;
+                odds: number;
+                win: number;
+            };
+        };
+        win: number;
+        multipliers: number[];
+        newBoard: string;
+        originalBoard: string;
+    }
+    export interface SettlementResultDetail {
+        tumbles: TumbleDetail[];
+        freeSpins: {
+            count: number;
+            odds: number;
+            win: number;
+        };
     }
 }
 

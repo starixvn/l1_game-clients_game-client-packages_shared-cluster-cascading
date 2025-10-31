@@ -4,7 +4,7 @@ import mobx from "mobx";
 
 import { FSBPromotionUIStore } from "db://shared-common-slot/fsb-promotion/scripts/stores/fsb-promotion-ui-store";
 import { CascadingSlotState } from "../cascading-slot-state";
-import { SlotNotification, SpinButtonState } from "../cascading-slot-utils";
+import { DialogName, SlotNotification, SpinButtonState } from "../cascading-slot-utils";
 import { AutoPlayStore } from "./auto-play-store";
 import { CascadingSlotConfigsStore } from "./cascading-slot-configs-store";
 import { CascadingSlotTumblesStore } from "./cascading-slot-tumbles-store";
@@ -39,7 +39,6 @@ export class CascadingUIStore {
     isTrialMode = false;
 
     _cascadingState = CascadingSlotState.NOT_READY_BET;
-    _isSymbolPreviewVisible = false;
 
     _bottomMessageState = SlotNotification.BEFORE_SPIN;
     _spinButtonState = SpinButtonState.IDLE;
@@ -67,10 +66,12 @@ export class CascadingUIStore {
 
     roundId = 0;
     triggerCancelAutoPlay = null;
+    isPlacingBet = false;
 
     triggerWinMultiplier = null;
 
     triggerDuringFreeSpinBonus = null;
+    portraitshowTotalMultiplierView = false;
     get minPeekScatterCount() {
         if (!this.configsStore.gameConfigs) {
             return 1000; // default value
@@ -107,11 +108,7 @@ export class CascadingUIStore {
     }
 
     get isSymbolPreviewVisible() {
-        return this._isSymbolPreviewVisible;
-    }
-
-    set isSymbolPreviewVisible(value: boolean) {
-        this._isSymbolPreviewVisible = value;
+        return this.dialogOpenEvent?.name === DialogName.PREVIEW_ODDS;
     }
 
     get bottomMessageState() {
@@ -199,21 +196,12 @@ export class CascadingUIStore {
     fadeBGM = { value: true };
 
     get disableBuyFreespins() {
-        return this.isFreeSpins
-            || this.cascadingState === CascadingSlotState.SPINNING
-            || this.autoPlayStore.isAutoplay
-            || this.fsbPromotionUIStore.isFSBPromotionInProgress;
-    }
-
-    get isShowMesgBeforeSpinPortrait() {
         return (
-            !this.isHideTopMessage &&
-            (this.cascadingState === CascadingSlotState.SPINNING || this.cascadingState === CascadingSlotState.READY_BET)
+            this.isFreeSpins ||
+            this.cascadingState === CascadingSlotState.SPINNING ||
+            this.autoPlayStore.isAutoplay ||
+            this.fsbPromotionUIStore.isFSBPromotionInProgress
         );
-    }
-
-    get isShowMesgAfterSpinPortrait() {
-        return !this.isHideTopMessage && this.cascadingState === SlotNotification.SETTLED;
     }
 
     get showFreeSpinsSectionsPortrait() {
@@ -223,4 +211,10 @@ export class CascadingUIStore {
     get isShowAutoSpinRoundPortrait() {
         return this.bottomMessageState === SlotNotification.AUTO_SPIN;
     }
+
+    get isAutoSpinOrFreeSpin() {
+        return this.isFreeSpins || this.autoPlayStore.isAutoplay;
+    }
+
+    dialogOpenEvent: { name: string } = null;
 }
