@@ -1,7 +1,7 @@
 import gc from "@sg/game-client-base";
 import { _decorator, Color, instantiate, Label, Node, NodePool, Prefab, sp, tween, UIOpacity, UIRenderer, v3, Vec3 } from "cc";
 import { AudioIds } from "db://assets/game/audios/AudioIds";
-import { CascadingSlotState } from "db://shared-cascading-slot/cascading-slot-state";
+import { CascadingSlotState } from "db://shared-cluster-cascading/cascading-slot-state";
 import { AudioUtils } from "db://shared-components/game/audios/utils";
 import { bundleManager } from "db://shared-components/shared/common-components/bundle-manager/bundle-manager";
 import { ObserverComponent } from "db://shared-components/shared/common-components/observer-component/scripts/observer-component";

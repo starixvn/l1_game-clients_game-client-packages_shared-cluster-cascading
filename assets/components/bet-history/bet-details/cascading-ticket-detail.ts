@@ -1,6 +1,6 @@
 import gc from "@sg/game-client-base";
 import { _decorator, Button, Color, instantiate, Label, Node, Prefab, sys } from "cc";
-import { GameServiceMessageCascading } from "db://shared-cascading-slot/game-messages-cascading";
+import { GameServiceMessageCascading } from "db://shared-cluster-cascading/game-messages-cascading";
 import { Dialog } from "db://shared-components/shared/common-components/dialogs/dialog";
 import { ObserverComponent } from "db://shared-components/shared/common-components/observer-component/scripts/observer-component";
 import Observer from "observer";
