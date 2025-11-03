@@ -78,7 +78,7 @@ export class CascadingUIStore {
         }
         const freeSpinOdds = this.configsStore.gameConfigs.odds.freeSpins;
 
-        const odds = this.isFreeSpins ? freeSpinOdds.additionalOdds : freeSpinOdds.initialOdds;
+        const odds = this.isFreeSpins && freeSpinOdds?.additionalOdds ? freeSpinOdds.additionalOdds : freeSpinOdds.initialOdds;
         const minOdd = odds.filter((odd) => odd.odds > 0).sort((a, b) => a.count - b.count)[0];
         return minOdd.count - 1;
     }

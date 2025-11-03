@@ -10,16 +10,14 @@ import { random } from "lodash-es";
 import Observer from "observer";
 import {
     BoardSize,
-    convertBoardValue,
     globalEmitter,
     resourcesCache,
     SlotClientEvent,
     SlotNotification,
     SpecialSymbol,
-    SymbolBoard,
-    WinIconDetail,
+    SymbolBoard
 } from "../../../cascading-slot-utils";
-import { GameServiceMessageCascading, Tumble } from "../../../game-messages-cascading";
+import { GameServiceMessageCascading, RageStage, Tumble } from "../../../game-messages-cascading";
 import { CascadingSlotTumblesHandlers } from "../../../handlers/cascading-slot-tumbles-handlers";
 import { CascadingUIHandler } from "../../../handlers/cascading-ui-handler";
 import { BetControlStore } from "../../../stores/bet-control-store";
@@ -28,6 +26,7 @@ import { CascadingUIStore } from "../../../stores/cascading-ui-store";
 import { MultiplierItem } from "../../multiplier/multiplier-item";
 import { CascadingPreviewOddsPopup } from "../../preview-symbol/cascading-preview-odds-popup";
 import { CascadingSlotReel } from "../../slot-reel/cascading-slot-reel";
+import { CascadingSlotReelItem } from "../../slot-reel/cascading-slot-reel-item";
 import { TotalMultiplierView } from "../../total-multiplier/cascading-total-multiplier-view";
 import { TumbleWinWiew } from "../../tumbles/tumble-win-view";
 const { observer, render, handle } = Observer;
@@ -142,40 +141,45 @@ export class CascadingSlotBoard extends ObserverComponent {
         }
     }
 
-    async handleTumbles(tumbles: Tumble[], isTurbo: boolean) {
+    async handleTumbles(tumbles: GameServiceMessageCascading.NewTumble[], isTurbo: boolean) {
         if (!tumbles || tumbles.length <= 1) {
             return;
         }
 
         this.handleBottomMessage(SlotNotification.TUMBLE_WIN);
 
-        let multiplierCount = tumbles[0].multipliers.length;
-        for (let i = 0; i < tumbles.length - 1; i++) {
+        for (let i = 1; i < tumbles.length; i++) {
             const tumble = tumbles[i];
-            const { icons, win: tumbleWin, settlement } = tumble;
-            const newTumbleMultipliers = [...tumbles[i + 1].multipliers];
-            const getMoreMultiplier = newTumbleMultipliers.length > multiplierCount;
-            if (getMoreMultiplier) {
-                multiplierCount = newTumbleMultipliers.length;
+            const { symbols, newSymbols, win, rageMeter, triggeredStage } = tumble;
+
+            if (triggeredStage !== undefined && triggeredStage !== null) {
+                console.log(`Triggered stage: ${triggeredStage}`);
+
+
             }
-            const tumbleMultipliers = newTumbleMultipliers;
 
-            const explode = convertBoardValue(settlement.explode);
-            const newItems = convertBoardValue(settlement.new);
+            const isReplaceSymbols = triggeredStage === RageStage.RAGE_4;
+            if (isReplaceSymbols) {
+                console.log(`Rage 4`);
+                console.log("Replace symbols by newSymbols");
+            } else {
+                console.log("Exploding symbols");
+            }
 
-            if (tumbleWin > 0) {
-                Object.keys(icons).forEach((iconKey) => {
-                    const winIconDetail: WinIconDetail = icons[iconKey];
-                    const node = this.getRandomWinItem(explode, +iconKey);
-                    const position = ComponentUtils.convertPosition(this.effectContainer, node);
-                    this.createFlyWinLabel(this.effectContainer, position, winIconDetail.win);
+
+            const explode = symbols;// convertBoardValue(settlement.explode);
+            const newItems = newSymbols;// convertBoardValue(settlement.new);
+
+            if (win > 0) {
+                explode.forEach((cluster) => {
+                    const { position, win } = cluster;
+                    const node = this.getRandomWinItem(position);
+                    const pos = ComponentUtils.convertPosition(this.effectContainer, node);
+                    this.createFlyWinLabel(this.effectContainer, pos, win);
                 });
-                this.setTumbles(tumbles);
-                this.handleTotalWinTumble(tumbleWin);
-                this.setTumbleIcons(tumble);
-                this.playSound(AudioIds.SYMBOL_MATCH);
             }
 
+            this.playSound(AudioIds.SYMBOL_MATCH);
             await this.removeItems(explode, i);
             await this.fallIn(false, false);
 
@@ -189,10 +193,9 @@ export class CascadingSlotBoard extends ObserverComponent {
                 await AnimationUtils.delayTime(this.PEEK_EFFECT_DURATION);
             }
             this.addItems(newItems, hasPeekEffect);
-            this.updateMultiplierItems(tumbleMultipliers);
             await this.fallIn(hasPeekEffect, false);
             AudioUtils.stopStoppableSFX(AudioIds.PEEK_EFFECT_REEL);
-            if (hasPeekEffect && i === tumbles.length - 2) {
+            if (hasPeekEffect && i === tumbles.length - 1) {
                 await AnimationUtils.delayTime(this.PEEK_EFFECT_DURATION);
             }
         }
@@ -265,28 +268,18 @@ export class CascadingSlotBoard extends ObserverComponent {
         }
     }
 
-    getRandomWinItem(data: number[][], winIcon: number): Node {
-        const list = [];
-        for (let i = 0; i < this.reels.length; i++) {
-            const reelData = data[i];
-            for (let j = 0; j < reelData.length; j++) {
-                if (reelData[j] === winIcon) {
-                    list.push({ i, j });
-                }
-            }
-        }
-        const randomIndex = random(0, list.length - 1);
-        const randomItem = list[randomIndex];
-        return this.reels[randomItem.i].getItemNode(randomItem.j);
+    getRandomWinItem(data: { x: number, y: number }[]): Node {
+        const randomIndex = random(0, data.length - 1);
+        const pos = data[randomIndex];
+        return this.reels[pos.x].getItemFromTop(pos.y).node;
     }
 
-    public async removeItems(data: number[][], tumbleIndex: number) {
-        const reelItems = this.reels.map((reel, index) => {
-            return data[index]
-                .map((item, index) => {
-                    return item !== -1 ? index : -1;
-                })
-                .filter((value) => value > -1);
+    public async removeItems(winClusters: GameServiceMessageCascading.WinCluster[], tumbleIndex: number) {
+        const positions = winClusters.flatMap((winCluster) => winCluster.position);
+        const reelItems = this.reels.map((reel) => [] as CascadingSlotReelItem[]);
+
+        positions.forEach((pos) => {
+            reelItems[pos.x].push(this.reels[pos.x].getItemFromTop(pos.y));
         });
 
         await Promise.all(
@@ -299,7 +292,7 @@ export class CascadingSlotBoard extends ObserverComponent {
         await Promise.all(
             reelItems.map((items, index) => {
                 const reel = this.reels[index];
-                return reel.removeItemsByIndex(items);
+                return reel.removeItems(items);
             })
         );
     }
@@ -440,7 +433,6 @@ export class CascadingSlotBoard extends ObserverComponent {
                     .by(0.15, { position: v3(0, -10, 0) })
                     .by(1.3, { position: v3(0, 60, 0) }, { easing: "sineOut" })
             )
-
             .call(() => {
                 node.destroy();
             })

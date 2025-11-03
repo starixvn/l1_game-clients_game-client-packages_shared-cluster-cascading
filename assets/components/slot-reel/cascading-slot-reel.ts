@@ -82,10 +82,15 @@ export class CascadingSlotReel extends Component {
         return this.items[index];
     }
 
+    getItemFromTop(index: number): CascadingSlotReelItem {
+        return this.items[BoardSize.ROW - 1 - index];
+    }
+
     addItems(data: number[]): CascadingSlotReelItem[] {
+        const reverseData = [...data].reverse(); // top to bottom
         let i = 0;
         const items = [];
-        data.forEach((value) => {
+        reverseData.forEach((value) => {
             if (value === -1) {
                 return;
             }
@@ -100,13 +105,18 @@ export class CascadingSlotReel extends Component {
     }
 
     setItemData(data: number[]) {
+        const reverseData = [...data].reverse(); // top to bottom
         this.items.forEach((item, index) => {
-            item.setItem(data[index]);
+            item.setItem(reverseData[index]);
         });
     }
 
-    async highlightItem(index: number) {
+    async highlightItemByIndex(index: number) {
         const item = this.items[index];
+        await this.highlightItem(item);
+    }
+
+    async highlightItem(item: CascadingSlotReelItem) {
         ComponentUtils.moveToOtherNode(item.node, this.effectContainer);
         await item.playEffect("highlight");
     }
@@ -121,8 +131,12 @@ export class CascadingSlotReel extends Component {
         ComponentUtils.moveToOtherNode(item.node, this.node);
     }
 
-    async removeItem(index: number) {
+    async removeItemByIndex(index: number) {
         const item = this.items[index];
+        await this.removeItem(item);
+    }
+
+    private async removeItem(item: CascadingSlotReelItem) {
         if (resourcesCache.gameFeatures?.fixedExplodeDuration) {
             item.playEffect("explode").then(() => {
                 item.node.destroy();
@@ -135,8 +149,13 @@ export class CascadingSlotReel extends Component {
     }
 
     async removeItemsByIndex(list: number[]) {
-        await Promise.all(list.map((index) => this.removeItem(index)));
+        await Promise.all(list.map((index) => this.removeItemByIndex(index)));
         this.items = this.items.filter((item, index) => !list.includes(index));
+    }
+
+    async removeItems(items: CascadingSlotReelItem[]) {
+        await Promise.all(items.map((item) => this.removeItem(item)));
+        this.items = this.items.filter((item) => !items.includes(item));
     }
 
     async fallOut(isTurbo: boolean) {
@@ -265,8 +284,8 @@ export class CascadingSlotReel extends Component {
         await this.fallIn(isTurbo, onSpinEnded);
     }
 
-    async highlightItems(list: number[]) {
-        await Promise.all(list.map((index) => this.highlightItem(index)));
+    async highlightItems(items: CascadingSlotReelItem[]) {
+        await Promise.all(items.map((item) => this.highlightItem(item)));
     }
 
     async highlightScatterItems() {

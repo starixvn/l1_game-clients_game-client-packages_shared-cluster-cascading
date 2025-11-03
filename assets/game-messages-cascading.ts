@@ -21,6 +21,9 @@ export namespace GameServiceMessageCascading {
         symbols: WinCluster[];
         win: number;
         rageMeter: number;
+
+        rageStages?: boolean[];
+        triggeredStage?: number;
     }
 
     export interface WinCluster {
@@ -150,4 +153,11 @@ export interface Tumble {
     settlement: Settlement;
     result: string;
     multipliers: number[];
+}
+
+export enum RageStage {
+    RAGE_1 = 1,
+    RAGE_2 = 2,
+    RAGE_3 = 3,
+    RAGE_4 = 4,
 }

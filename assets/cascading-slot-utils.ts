@@ -1,6 +1,6 @@
 import { EventTarget, Node, tween, UIOpacity } from "cc";
 import { CascadingSlotConfig } from "./cascading-slot-base-configs";
-import { Tumble } from "./game-messages-cascading";
+import { GameServiceMessageCascading } from "./game-messages-cascading";
 
 export enum SpecialSymbol {
     SCATTER_SYMBOL = 8,
@@ -100,8 +100,7 @@ export enum SlotClientEvent {
 
 export interface SymbolBoard {
     symbols: number[][];
-    multipliers: number[];
-    tumbles: Tumble[];
+    tumbles: GameServiceMessageCascading.NewTumble[];
 }
 
 export interface WinIconDetail {
