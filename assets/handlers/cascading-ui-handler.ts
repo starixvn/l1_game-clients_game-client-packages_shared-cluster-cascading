@@ -47,7 +47,7 @@ export class CascadingUIHandler implements gc.Shared.IMultipleHandlers {
         }, 0);
     }
 
-    handle() {}
+    handle() { }
 
     handleTotalWin({ win, isActualWin = false }) {
         this.uiStore.isActualWin = isActualWin;
@@ -56,6 +56,10 @@ export class CascadingUIHandler implements gc.Shared.IMultipleHandlers {
         } else {
             this.uiStore.totalWin = win;
         }
+    }
+
+    updateRageMeter(rageMeter: number) {
+        this.uiStore.rageMeter = rageMeter;
     }
 
     handleTotalWinTumble(tumberWin: number) {
@@ -123,6 +127,8 @@ export class CascadingUIHandler implements gc.Shared.IMultipleHandlers {
         if (!this.uiStore.isFreeSpins && !this.fsbPromotionUIStore.isFSBPromotionInProgress) {
             this.uiStore.totalMultiplier = 0;
             this.uiStore.portraitshowTotalMultiplierView = false;
+
+            this.uiStore.rageMeter = 0;
         }
         this.uiStore.totalWin = 0;
         this.uiStore.activePeekEffect = false;

@@ -22,8 +22,9 @@ export namespace GameServiceMessageCascading {
         win: number;
         rageMeter: number;
 
-        rageStages?: boolean[];
+        rageStages?: boolean[]; //unused
         triggeredStage?: number;
+        triggeredPositions?: { x: number, y: number, symbol?: number }[];
     }
 
     export interface WinCluster {

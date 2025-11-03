@@ -29,6 +29,8 @@ export class CascadingUIStore {
     totalTumbleWin = 0;
     isActualWin = false;
 
+    rageMeter = 0;
+
     multiplier = 0;
     totalMultiplier = 0;
     get isShowTotalMultiplierJoinGame() {

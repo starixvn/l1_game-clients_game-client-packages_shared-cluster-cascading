@@ -153,54 +153,81 @@ export class CascadingSlotBoard extends ObserverComponent {
             const { symbols, newSymbols, win, rageMeter, triggeredStage } = tumble;
 
             if (triggeredStage !== undefined && triggeredStage !== null) {
-                console.log(`Triggered stage: ${triggeredStage}`);
-
-
+                await this.triggerStage(triggeredStage);
             }
 
             const isReplaceSymbols = triggeredStage === RageStage.RAGE_4;
             if (isReplaceSymbols) {
-                console.log(`Rage 4`);
-                console.log("Replace symbols by newSymbols");
+                await this.replacingTumble(tumble);
             } else {
-                console.log("Exploding symbols");
-            }
-
-
-            const explode = symbols;// convertBoardValue(settlement.explode);
-            const newItems = newSymbols;// convertBoardValue(settlement.new);
-
-            if (win > 0) {
-                explode.forEach((cluster) => {
-                    const { position, win } = cluster;
-                    const node = this.getRandomWinItem(position);
-                    const pos = ComponentUtils.convertPosition(this.effectContainer, node);
-                    this.createFlyWinLabel(this.effectContainer, pos, win);
-                });
-            }
-
-            this.playSound(AudioIds.SYMBOL_MATCH);
-            await this.removeItems(explode, i);
-            await this.fallIn(false, false);
-
-            const remains = this.reels.map((reel) => reel.getItemsData());
-            const hasPeekEffect = !isTurbo ? this.checkPeekEffectInTumbles(remains) : null;
-            if (hasPeekEffect) {
-                this.reels.forEach((reel) => reel.peekEffectScatterItems());
-                AudioUtils.playStoppableSFX(AudioIds.PEEK_EFFECT_REEL, true);
-
-                this.showPeekEffectInTumbles(newItems);
-                await AnimationUtils.delayTime(this.PEEK_EFFECT_DURATION);
-            }
-            this.addItems(newItems, hasPeekEffect);
-            await this.fallIn(hasPeekEffect, false);
-            AudioUtils.stopStoppableSFX(AudioIds.PEEK_EFFECT_REEL);
-            if (hasPeekEffect && i === tumbles.length - 1) {
-                await AnimationUtils.delayTime(this.PEEK_EFFECT_DURATION);
+                const isLastTumble = i === tumbles.length - 1;
+                await this.explodingTumble(tumble, isTurbo, isLastTumble);
             }
         }
 
         this.hidePeekEffects();
+    }
+
+    private async triggerStage(triggeredStage: number) {
+        console.log(`Triggered stage: ${triggeredStage}`);
+    }
+
+    private async replacingTumble(tumble: GameServiceMessageCascading.NewTumble) {
+        console.log("Replace symbols by newSymbols");
+        const { triggeredPositions, reels } = tumble;
+        this.playSound(AudioIds.SYMBOL_MATCH);
+
+        const replaceItems = triggeredPositions.map((pos) => {
+            return {
+                x: pos.x,
+                y: pos.y,
+                symbol: reels[pos.x][pos.y]
+            };
+        });
+        await this.replaceItems(replaceItems);
+    }
+
+    private async explodingTumble(tumble: GameServiceMessageCascading.NewTumble, isTurbo: boolean, isLastTumble: boolean) {
+        console.log("Exploding symbols");
+        const { symbols, newSymbols, win, rageMeter, triggeredPositions } = tumble;
+
+        const explode = triggeredPositions?.length > 0 ? triggeredPositions : symbols.flatMap((winCluster) => winCluster.position);
+        const newItems = newSymbols;
+
+        if (win > 0) {
+            symbols.forEach((cluster) => {
+                const { position, win } = cluster;
+                const node = this.getRandomWinItem(position);
+                const pos = ComponentUtils.convertPosition(this.effectContainer, node);
+                this.createFlyWinLabel(this.effectContainer, pos, win);
+            });
+        }
+
+        this.playSound(AudioIds.SYMBOL_MATCH);
+        await this.removeItems(explode);
+        await this.fallIn(false, false);
+
+        const remains = this.reels.map((reel) => reel.getItemsData());
+        const hasPeekEffect = !isTurbo ? this.checkPeekEffectInTumbles(remains) : null;
+        if (hasPeekEffect) {
+            this.reels.forEach((reel) => reel.peekEffectScatterItems());
+            AudioUtils.playStoppableSFX(AudioIds.PEEK_EFFECT_REEL, true);
+
+            this.showPeekEffectInTumbles(newItems);
+            await AnimationUtils.delayTime(this.PEEK_EFFECT_DURATION);
+        }
+        this.addItems(newItems, hasPeekEffect);
+        await this.fallIn(hasPeekEffect, false);
+        this.updateRageMeter(rageMeter);
+        AudioUtils.stopStoppableSFX(AudioIds.PEEK_EFFECT_REEL);
+        if (hasPeekEffect && isLastTumble) {
+            await AnimationUtils.delayTime(this.PEEK_EFFECT_DURATION);
+        }
+    }
+
+    @handle(CascadingUIHandler, (handler, rageMeter: number) => handler.updateRageMeter(rageMeter))
+    updateRageMeter(rageMeter: number) {
+        return rageMeter;
     }
 
     @handle(CascadingUIHandler, (handler, tumbleWin: number) => handler.handleTotalWinTumble(tumbleWin))
@@ -274,10 +301,8 @@ export class CascadingSlotBoard extends ObserverComponent {
         return this.reels[pos.x].getItemFromTop(pos.y).node;
     }
 
-    public async removeItems(winClusters: GameServiceMessageCascading.WinCluster[], tumbleIndex: number) {
-        const positions = winClusters.flatMap((winCluster) => winCluster.position);
-        const reelItems = this.reels.map((reel) => [] as CascadingSlotReelItem[]);
-
+    public async removeItems(positions: { x: number, y: number }[]) {
+        const reelItems = this.reels.map(() => [] as CascadingSlotReelItem[]);
         positions.forEach((pos) => {
             reelItems[pos.x].push(this.reels[pos.x].getItemFromTop(pos.y));
         });
@@ -293,6 +318,28 @@ export class CascadingSlotBoard extends ObserverComponent {
             reelItems.map((items, index) => {
                 const reel = this.reels[index];
                 return reel.removeItems(items);
+            })
+        );
+    }
+
+    public async replaceItems(positions: { x: number, y: number, symbol: number }[]) {
+        const reelItems = this.reels.map(() => [] as CascadingSlotReelItem[]);
+        positions.forEach((pos) => {
+            reelItems[pos.x].push(this.reels[pos.x].getItemFromTop(pos.y));
+        });
+
+        await Promise.all(
+            reelItems.map((items, index) => {
+                const reel = this.reels[index];
+                return reel.highlightItems(items);
+            })
+        );
+
+        await Promise.all(
+            positions.map((pos) => {
+                const reel = this.reels[pos.x];
+                const item = reel.getItemFromTop(pos.y);
+                return reel.replaceItem(item, pos.symbol);
             })
         );
     }

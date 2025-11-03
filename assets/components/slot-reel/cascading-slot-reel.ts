@@ -87,10 +87,9 @@ export class CascadingSlotReel extends Component {
     }
 
     addItems(data: number[]): CascadingSlotReelItem[] {
-        const reverseData = [...data].reverse(); // top to bottom
         let i = 0;
         const items = [];
-        reverseData.forEach((value) => {
+        data.forEach((value) => {
             if (value === -1) {
                 return;
             }
@@ -145,6 +144,18 @@ export class CascadingSlotReel extends Component {
         } else {
             await item.playEffect("explode");
             item.node.destroy();
+        }
+    }
+
+    async replaceItem(item: CascadingSlotReelItem, symbol: number) {
+        const callback = () => {
+            item.setItem(symbol);
+        };
+        if (resourcesCache.gameFeatures?.fixedExplodeDuration) {
+            item.playEffect("explode").then(callback);
+            await AnimationUtils.delayTime(resourcesCache.gameFeatures.fixedExplodeDuration);
+        } else {
+            await item.playEffect("explode").then(callback);
         }
     }
 
