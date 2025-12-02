@@ -16,15 +16,31 @@ export class PortraitCascadingHistoryItem extends CascadingHistoryItem {
     setData(data: any) {
         super.setData(data);
         this.handleFreeSpin(data);
+        if (data.betHistoryLog.betWin > 0) {
+            this.time.node.getComponent(Label).color = this.textNormalColor;
+            this.totalWin.node.getComponent(Label).color = this.textHighlightColor;
+        } else {
+            this.totalWin.node.getComponent(Label).color = this.textNormalColor;
+            this.time.node.getComponent(Label).color = this.textNormalColor;
+        }
+    }
+
+    private getFreeSpinText(betHistoryLog: any): string {
+        switch (true) {
+            case betHistoryLog.buyFreeSpin > 0:
+                return "Buy Feature";
+            case betHistoryLog.freeSpin:
+                return "Free Spin";
+            default:
+                return "";
+        }
     }
 
     handleFreeSpin(data: any) {
         const { betHistoryLog } = data;
-        const freeSpin = betHistoryLog.freeSpin;
-        if (freeSpin) {
-            this.haveFreeSpin.node.active = true;
-            this.haveFreeSpin.string = `(${gc.Translator.gameTranslate("free_spin")})`;
-        }
+        const freeSpinText = this.getFreeSpinText(betHistoryLog);
+        this.haveFreeSpin.node.active = freeSpinText !== "";
+        this.haveFreeSpin.string = freeSpinText;
     }
 }
 
