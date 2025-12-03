@@ -66,19 +66,16 @@ export class CascadingTicketDetailItem extends Component {
                 currWinTumble,
                 extraFreeSpin: freeSpin,
             });
-
-        } else if (tumble.win > 0) {
-            Object.entries<{ count; win }>(tumble.icons).forEach(([key, value]) => {
+        } else if (tumble.win > 0 && tumble.symbols?.length > 0) {
+            tumble.symbols.forEach((winCluster: any) => {
                 tumbleNode = instantiate(this.tumbleWinDetailItemPrefab);
                 const control = tumbleNode.getComponent(CascadingTumbleItem);
-                const { count, win } = value;
-                control.setData(+key, count, win);
+                control.setData(winCluster.symbol, winCluster.count, winCluster.win, winCluster.multiplier);
                 numberOfIcon++;
                 this.content.addChild(tumbleNode);
             });
             this.calculateHeightRow(numberOfIcon);
-        }
-
+        } 
         if (tumble.win === 0) {
             tumbleNode = instantiate(this.noTumbleWinDetailPrefab);
             this.content.addChild(tumbleNode);
@@ -89,7 +86,7 @@ export class CascadingTicketDetailItem extends Component {
     }
 
     protected updateIndexLabel(index: string | number) {
-        this.index.string = typeof index === 'string' ? index : (index + 1).toString();
+        this.index.string = typeof index === 'string' ? index : index.toString();
     }
 
     setDataHaveFreeSpin(data: FreeSpinData) {
@@ -98,14 +95,14 @@ export class CascadingTicketDetailItem extends Component {
         control.setDataForFreeSpinTumble(data);
         this.content.addChild(tumbleNode);
         this.win.string = gc.FormatUtils.numberWithCommas(data.currWinTumble, 2, false);
-        this.index.string = (data.index + 1).toString();
+        this.index.string = data.index.toString();
         this.calculateHeightRow(1);
         return tumbleNode;
     }
 
-    setDataResultBoard(symbols: string, multiplier: number[]) {
+    setDataResultBoard(symbols: string, multiplier: number[][]) {
         const board = convertData(symbols);
-        this.resultBoard.setData(board, multiplier);
+        this.resultBoard.setData(board);
     }
 
     showNoWinBoard() {

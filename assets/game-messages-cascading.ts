@@ -106,7 +106,7 @@ export namespace GameServiceMessageCascading {
         betLevel: string;
         coinValue: number;
         totalAmount: number;
-        betwin: number;
+        betWin: number;
         freeSpin: boolean;
         buyFreeSpin: boolean;
         reachMaxWin: boolean;
@@ -129,9 +129,16 @@ export namespace GameServiceMessageCascading {
         };
         win: number;
         multipliers: number[];
+        reelMultipliers?: number[][];
         newBoard: string;
         originalBoard: string;
+        
+        reels: number[][];
+        symbols: WinCluster[];
+        triggeredPositions?: { x: number, y: number, symbol?: number }[];
+        rageMeter: number;
     }
+
 
     export interface SettlementResultDetail {
         tumbles: TumbleDetail[];

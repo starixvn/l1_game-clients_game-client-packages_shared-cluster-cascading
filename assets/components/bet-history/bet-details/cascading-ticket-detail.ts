@@ -76,6 +76,7 @@ export class CascadingTicketDetail extends ObserverComponent {
         if (freeSpinsWin) {
             isShowNextRow = true;
         }
+
         tumbles.forEach((tumble, index) => {
             const detailItem = this.loadDetailItem();
             const control = detailItem.getComponent(CascadingTicketDetailItem);
@@ -84,18 +85,20 @@ export class CascadingTicketDetail extends ObserverComponent {
                 control.setData(tumble, index, betHistoryLog, currWinTumble);
                 this.content.addChild(detailItem);
             }
-            const newTumbleMultipliers = [...tumble.multipliers];
-            control.setDataResultBoard(tumble.originalBoard, newTumbleMultipliers);
-            if (tumble.explodedSymbols) {
-                control.highlightExplodedSymbols(tumble.explodedSymbols);
-            } else if (isWinFreeSpin) {
-                control.highlightScatterSymbolDetail();
-            } else {
-                control.showNoWinBoard();
-            }
+            const reel = tumble?.reels?.map(col => [...col].reverse()).flat().join(',') ?? '';
+            const newTumbleMultipliers = tumble.reelMultipliers ?? [];
+            control.setDataResultBoard(reel, newTumbleMultipliers);
+            // if (positions.length > 0) {
+            //     control.highlightExplodedSymbolsByPosition(positions);
+            // } else if (isWinFreeSpin) {
+            //     control.highlightScatterSymbolDetail();
+            // } else {
+            //     control.showNoWinBoard();
+            // }
         });
+        console.log(betHistoryLog)
         this.handleMultiplierData(betHistoryLog);
-        this.winTotal.string = gc.FormatUtils.numberWithCommas(betHistoryLog.betwin, 2, false);
+        this.winTotal.string = gc.FormatUtils.numberWithCommas(betHistoryLog.betWin, 2, false);
         this.reachMaxText.node.active = isReachMaxWin;
     }
 
