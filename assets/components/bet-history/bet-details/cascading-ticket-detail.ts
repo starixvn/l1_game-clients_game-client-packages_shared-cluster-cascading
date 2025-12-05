@@ -50,6 +50,7 @@ export class CascadingTicketDetail extends ObserverComponent {
 
     data: any = null;
 
+    
     setData(data: { betHistoryLog: GameServiceMessageCascading.BetDetailData }) {
         const { betHistoryLog } = data;
         if (!betHistoryLog) {
@@ -65,7 +66,7 @@ export class CascadingTicketDetail extends ObserverComponent {
             roundIdText += ` (Free Spin)`;
         }
         this.roundId.string = roundIdText;
-        const tumbles = betHistoryLog.settlementResult.tumbles;
+        const tumbles = this.handleMoveIndexTumble(betHistoryLog.settlementResult.tumbles);
         const isReachMaxWin = betHistoryLog.reachMaxWin;
 
         let currWinTumble = 0;
@@ -76,7 +77,6 @@ export class CascadingTicketDetail extends ObserverComponent {
         if (freeSpinsWin) {
             isShowNextRow = true;
         }
-
         tumbles.forEach((tumble, index) => {
             const detailItem = this.loadDetailItem();
             const control = detailItem.getComponent(CascadingTicketDetailItem);
@@ -96,11 +96,39 @@ export class CascadingTicketDetail extends ObserverComponent {
             //     control.showNoWinBoard();
             // }
         });
-        console.log(betHistoryLog)
         this.handleMultiplierData(betHistoryLog);
         this.winTotal.string = gc.FormatUtils.numberWithCommas(betHistoryLog.betWin, 2, false);
         this.reachMaxText.node.active = isReachMaxWin;
     }
+
+    handleMoveIndexTumble(data: any[]) {
+        for (let i = 1; i < data.length; i++) {
+            const current = data[i];
+            const previous = data[i - 1];
+            if (current.symbols?.length > 0) {
+                previous.symbols = previous.symbols || [];
+                previous.symbols.unshift(...current.symbols);
+                current.symbols = [];
+            }
+            ['newSymbols', 'reelMultipliers'].forEach(key => {
+                if (current[key]?.length > 0) {
+                    previous[key] = previous[key] || [];
+                    previous[key].push(...current[key]);
+                    current[key] = [];
+                }
+            });
+            if (current.win !== undefined) {
+                previous.win = (previous.win || 0) + current.win;
+                current.win = 0;
+            }
+            if (current.rageMeter !== undefined) {
+                previous.rageMeter = current.rageMeter;
+            }
+        }
+        
+        return data;
+    }
+
 
     loadDetailItem() {
         return sys.isMobile ? instantiate(this.prfMobileTicketDetailItem) : instantiate(this.prfTicketDetailItem);

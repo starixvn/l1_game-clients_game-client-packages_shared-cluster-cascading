@@ -59,7 +59,7 @@ export class CascadingTumbleItem extends Component {
     handleShowImpormation() {
         this.impormationNode.active = !this.impormationNode.active;
         this.closeTooltip.active = !this.closeTooltip.active;
-        this.impormationValue.string = `${this.win} x ${this.multiplier}`;
+        this.impormationValue.string = `${gc.FormatUtils.numberWithCommas(this.win, 2, false)} x ${this.multiplier}`;
     }
     handleClickCloseTooltip() {
         this.impormationNode.active = false;

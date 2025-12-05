@@ -40,6 +40,12 @@ export class PortraitCascadingTicketDetail extends CascadingTicketDetail {
     @property(Node)
     btnPrevious: Node = null;
 
+    @property(Node)
+    btnDropdown: Node = null;
+
+    @property(Node)
+    dropdownNode: Node = null;
+
     public betHistory: PortraitBetHistoryLog[] = [];
     public betHistoryDetail: { betHistoryLog: gc.BetHistory.BetHistoryLog } = null;
     private currentId = 0;
@@ -71,6 +77,7 @@ export class PortraitCascadingTicketDetail extends CascadingTicketDetail {
         this.betHistory = betLogs;
         this.handleBetHistorySelection();
         this.updateNavigationButtons(betLogs);
+        // console.log('betHistoryLog', JSON.parse(JSON.stringify(this.betHistory)))
     }
 
 
@@ -96,9 +103,19 @@ export class PortraitCascadingTicketDetail extends CascadingTicketDetail {
                 this.setData({
                     betHistoryLog: targetItem
                 });
+                this.updateDropdownVisibility(targetItem);
                 this.isNavigatingToNextPage = false;
             }
         }
+    }
+
+    private updateDropdownVisibility(betHistoryLog: any) {
+        if (!this.btnDropdown) {
+            return;
+        }
+        const hasFreeSpin = betHistoryLog?.freeSpin === true;
+        const hasBuyFreeSpin = (betHistoryLog?.buyFreeSpin ?? 0) > 0;
+        this.btnDropdown.active = hasFreeSpin || hasBuyFreeSpin;
     }
 
     setData(data: any) {
@@ -119,6 +136,7 @@ export class PortraitCascadingTicketDetail extends CascadingTicketDetail {
         this.updateBasicDetails(betHistoryLog);
         this.updateMultiplierDetails(betHistoryLog);
         this.updateNavigationButtons(this.betHistory);
+        this.updateDropdownVisibility(betHistoryLog);
     }
 
     private updateBasicDetails(betHistoryLog: any) {
@@ -268,10 +286,15 @@ export class PortraitCascadingTicketDetail extends CascadingTicketDetail {
     private clearContent() {
         this.content?.removeAllChildren();
         this.resetMultiplierNode();
+        if (this.dropdownNode) {
+            this.dropdownNode.active = false;
+        }
     }
 
 
-
+    handleDropdown() {
+        this.dropdownNode.active = !this.dropdownNode.active;
+    }
 
     updateHistoryDetail() {
         AudioUtils.playClick();
@@ -281,6 +304,7 @@ export class PortraitCascadingTicketDetail extends CascadingTicketDetail {
         }
         this.clearContent();
         this.setData(this.betHistoryDetail);
+        this.updateDropdownVisibility(newItem);
     }
 
 }

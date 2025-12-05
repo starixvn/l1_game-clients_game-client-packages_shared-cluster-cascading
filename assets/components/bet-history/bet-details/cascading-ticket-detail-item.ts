@@ -86,7 +86,7 @@ export class CascadingTicketDetailItem extends Component {
     }
 
     protected updateIndexLabel(index: string | number) {
-        this.index.string = typeof index === 'string' ? index : index.toString();
+        this.index.string = typeof index === 'string' ? index : (index + 1).toString();
     }
 
     setDataHaveFreeSpin(data: FreeSpinData) {
@@ -95,7 +95,7 @@ export class CascadingTicketDetailItem extends Component {
         control.setDataForFreeSpinTumble(data);
         this.content.addChild(tumbleNode);
         this.win.string = gc.FormatUtils.numberWithCommas(data.currWinTumble, 2, false);
-        this.index.string = data.index.toString();
+        this.index.string = (data.index + 1).toString();
         this.calculateHeightRow(1);
         return tumbleNode;
     }
