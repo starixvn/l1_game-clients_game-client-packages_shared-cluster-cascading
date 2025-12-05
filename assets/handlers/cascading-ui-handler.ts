@@ -13,6 +13,7 @@ import { CascadingSlotSettlementStore } from "../stores/cascading-slot-settlemen
 import { CascadingSlotTumblesStore } from "../stores/cascading-slot-tumbles-store";
 import { CascadingUIStore } from "../stores/cascading-ui-store";
 import { BetControlHandlers } from "./bet-control-handlers";
+import { RageMeterStore } from "../stores/rage-meter-store";
 
 const { injectable, inject } = inversify;
 
@@ -29,6 +30,8 @@ export class CascadingUIHandler implements gc.Shared.IMultipleHandlers {
     @inject(gc.GameUserSettings.GameUserSettingHandler)
     protected readonly gameUserSettingHandler: gc.GameUserSettings.GameUserSettingHandler;
     @inject(BuyFreespinsStore) protected readonly buyFsStore: BuyFreespinsStore;
+
+    @inject(RageMeterStore) protected readonly rageMeterStore: RageMeterStore;
 
     constructor() {
         setTimeout(() => {
@@ -60,6 +63,7 @@ export class CascadingUIHandler implements gc.Shared.IMultipleHandlers {
 
     updateRageMeter(rageMeter: number) {
         this.uiStore.rageMeter = rageMeter;
+        this.rageMeterStore.updateFromBackend(rageMeter);
     }
 
     handleTotalWinTumble(tumberWin: number) {
@@ -129,6 +133,7 @@ export class CascadingUIHandler implements gc.Shared.IMultipleHandlers {
             this.uiStore.portraitshowTotalMultiplierView = false;
 
             this.uiStore.rageMeter = 0;
+            this.rageMeterStore.reset();
         }
         this.uiStore.totalWin = 0;
         this.uiStore.activePeekEffect = false;
