@@ -109,12 +109,17 @@ export class CascadingTicketDetailItem extends Component {
         this.resultBoard.showNoWinBoard();
     }
 
-    highlightExplodedSymbols(symbols: number[]) {
-        if (symbols.length === 0) {
-            return;
+    highlightExplodedSymbols(symbols: any[]) {
+        if (!symbols?.length) {
+            return
         }
-        const values = convertBoardValue(symbols);
-        this.resultBoard.highlightExplodedSymbols(values);
+        const positions = symbols
+            .filter(cluster => cluster.position?.length > 0)
+            .flatMap(cluster => cluster.position);
+        
+        if (positions.length > 0) {
+            this.resultBoard.highlightExplodedSymbols(positions);
+        }
     }
 
     highlightScatterSymbolDetail() {

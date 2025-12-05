@@ -35,6 +35,8 @@ export class CascadingTumbleItem extends Component {
     private multiplier: number = 0;
     private win: number = 0;
     protected prefixSymbol = "symbol-";
+    
+    private static currentActiveItem: CascadingTumbleItem = null;
 
     setData(icon: number, count: number, win: number , multiplier: number) {
         this.numberIcon.string = count.toString();
@@ -57,12 +59,35 @@ export class CascadingTumbleItem extends Component {
     }
 
     handleShowImpormation() {
-        this.impormationNode.active = !this.impormationNode.active;
-        this.closeTooltip.active = !this.closeTooltip.active;
+        if (CascadingTumbleItem.currentActiveItem && CascadingTumbleItem.currentActiveItem !== this) {
+            CascadingTumbleItem.currentActiveItem.hideImpormation();
+        }
+        const willBeActive = !this.impormationNode.active;
+        this.impormationNode.active = willBeActive;
+        this.closeTooltip.active = willBeActive;
         this.impormationValue.string = `${gc.FormatUtils.numberWithCommas(this.win, 2, false)} x ${this.multiplier}`;
+        if (willBeActive) {
+            CascadingTumbleItem.currentActiveItem = this;
+        } else {
+            CascadingTumbleItem.currentActiveItem = null;
+        }
+    }
+    
+    private hideImpormation() {
+        this.impormationNode.active = false;
+        this.closeTooltip.active = false;
     }
     handleClickCloseTooltip() {
         this.impormationNode.active = false;
         this.closeTooltip.active = false;
+        if (CascadingTumbleItem.currentActiveItem === this) {
+            CascadingTumbleItem.currentActiveItem = null;
+        }
+    }
+    
+    onDestroy() {
+        if (CascadingTumbleItem.currentActiveItem === this) {
+            CascadingTumbleItem.currentActiveItem = null;
+        }
     }
 }

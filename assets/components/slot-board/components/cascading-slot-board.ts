@@ -388,24 +388,46 @@ export class CascadingSlotBoard extends ObserverComponent {
         uiRenderer.color = new Color(color.r, color.g, color.b, color.a * 0.7);
     }
 
-    highlightExplodedSymbols(explodedSymbols: number[][]) {
-        if (!this.effectContainer) {
+    highlightExplodedSymbols(explodedSymbols: { x: number, y: number }[] | number[][]) {
+        if (!this.effectContainer || !explodedSymbols?.length) {
             return;
         }
         this.effectContainer.active = true;
-        console.log("explodedSymbols", explodedSymbols);
-        explodedSymbols.forEach((symbols, reelIndex) => {
+        // Highlight exploded positions
+        const isPositionFormat = typeof explodedSymbols[0] === 'object' && 'x' in explodedSymbols[0];
+        if (isPositionFormat) {
+            this.highlightByPositions(explodedSymbols as { x: number, y: number }[]);
+        } else {
+            this.highlightByBoard(explodedSymbols as number[][]);
+        }
+        this.highlightMultiplierSymbols();
+    }
+    
+    private highlightByPositions(positions: { x: number, y: number }[]) {
+        positions.forEach(pos => {
+            const item = this.reels[pos.x]?.getItemFromTop(pos.y);
+            if (item?.node) {
+                ComponentUtils.moveToOtherNode(item.node, this.effectContainer);
+            }
+        });
+    }
+    
+    private highlightByBoard(board: number[][]) {
+        board.forEach((symbols, reelIndex) => {
             symbols.forEach((symbol, index) => {
                 if (symbol !== -1) {
-                    const item = this.reels[reelIndex].getItem(index);
-                    ComponentUtils.moveToOtherNode(item.node, this.effectContainer);
+                    const item = this.reels[reelIndex]?.getItem(index);
+                    if (item?.node) {
+                        ComponentUtils.moveToOtherNode(item.node, this.effectContainer);
+                    }
                 }
             });
         });
-
+    }
+    
+    private highlightMultiplierSymbols() {
         this.reels.forEach(reel => {
-            const items = reel.getItems();
-            items.forEach((item) => {
+            reel.getItems().forEach(item => {
                 if (item.isMultiplierSymbol) {
                     ComponentUtils.moveToOtherNode(item.node, this.effectContainer);
                 }

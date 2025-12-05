@@ -88,13 +88,14 @@ export class CascadingTicketDetail extends ObserverComponent {
             const reel = tumble?.reels?.map(col => [...col].reverse()).flat().join(',') ?? '';
             const newTumbleMultipliers = tumble.reelMultipliers ?? [];
             control.setDataResultBoard(reel, newTumbleMultipliers);
-            // if (positions.length > 0) {
-            //     control.highlightExplodedSymbolsByPosition(positions);
-            // } else if (isWinFreeSpin) {
-            //     control.highlightScatterSymbolDetail();
-            // } else {
-            //     control.showNoWinBoard();
-            // }
+            console.log('tumble', JSON.parse(JSON.stringify(tumble)))
+            if (tumble.symbols.length > 0) {
+                control.highlightExplodedSymbols(tumble.symbols);
+            } else if (isWinFreeSpin) {
+                control.highlightScatterSymbolDetail();
+            } else {
+                control.showNoWinBoard();
+            }
         });
         this.handleMultiplierData(betHistoryLog);
         this.winTotal.string = gc.FormatUtils.numberWithCommas(betHistoryLog.betWin, 2, false);
