@@ -202,11 +202,9 @@ export class CascadingSlotBoard extends ObserverComponent {
                 this.createFlyWinLabel(this.effectContainer, pos, win);
             });
         }
-
         this.playSound(AudioIds.SYMBOL_MATCH);
         await this.removeItems(explode);
         await this.fallIn(false, false);
-
         const remains = this.reels.map((reel) => reel.getItemsData());
         const hasPeekEffect = !isTurbo ? this.checkPeekEffectInTumbles(remains) : null;
         if (hasPeekEffect) {
@@ -306,14 +304,14 @@ export class CascadingSlotBoard extends ObserverComponent {
         positions.forEach((pos) => {
             reelItems[pos.x].push(this.reels[pos.x].getItemFromTop(pos.y));
         });
-
+        this.peekEffectOverlay.active = true;
         await Promise.all(
             reelItems.map((items, index) => {
                 const reel = this.reels[index];
                 return reel.highlightItems(items);
             })
         );
-
+        this.peekEffectOverlay.active = false;
         await Promise.all(
             reelItems.map((items, index) => {
                 const reel = this.reels[index];
@@ -327,14 +325,12 @@ export class CascadingSlotBoard extends ObserverComponent {
         positions.forEach((pos) => {
             reelItems[pos.x].push(this.reels[pos.x].getItemFromTop(pos.y));
         });
-
         await Promise.all(
             reelItems.map((items, index) => {
                 const reel = this.reels[index];
                 return reel.highlightItems(items);
             })
         );
-
         await Promise.all(
             positions.map((pos) => {
                 const reel = this.reels[pos.x];
@@ -397,6 +393,7 @@ export class CascadingSlotBoard extends ObserverComponent {
             return;
         }
         this.effectContainer.active = true;
+        console.log("explodedSymbols", explodedSymbols);
         explodedSymbols.forEach((symbols, reelIndex) => {
             symbols.forEach((symbol, index) => {
                 if (symbol !== -1) {
